@@ -6,6 +6,8 @@ import SelectPreset from "./pages/NewProject/SelectPreset";
 import SocialMediaPreset from "./pages/NewProject/SocialMediaPreset";
 import TemplateStudio from "./pages/NewProject/TemplateStudio";
 import SelectSizePage from "./pages/NewProject/TemplateStudio";
+import "./data/templatesDB";
+
 function App() {
   return (
     <Router>

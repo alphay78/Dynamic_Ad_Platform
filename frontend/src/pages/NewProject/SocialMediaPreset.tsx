@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -11,27 +11,43 @@ import {
 import { motion } from "framer-motion";
 import CreativeImg from "../../assets/CreativeImage.png";
 
+declare global {
+  interface Window {
+    TEMPLATES_DB: any;
+  }
+}
+
 const SocialMediaPreset: React.FC = () => {
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
 
-  const templates = [
-    { id: "template1", title: "Product Promotion", date: "2 months ago" },
-    { id: "template2", title: "Event Announcement", date: "3 months ago" },
-    { id: "template3", title: "Brand Awareness", date: "1 month ago" },
-    { id: "template4", title: "Testimonial Post", date: "4 months ago" },
-    { id: "template5", title: "New Collection", date: "2 months ago" },
-    { id: "template6", title: "Giveaway Post", date: "1 month ago" },
-    { id: "template7", title: "Customer Review", date: "5 months ago" },
-    { id: "template8", title: "Launch Countdown", date: "2 months ago" },
-  ];
+  // ✅ Load templates dynamically from window.TEMPLATES_DB
+  useEffect(() => {
+    if (window.TEMPLATES_DB && window.TEMPLATES_DB["square"]) {
+      const dbTemplates = window.TEMPLATES_DB["square"].templates.map(
+        (tpl: any) => ({
+          id: tpl.id,
+          title: tpl.name,
+          thumbnail: tpl.thumbnail,
+          date: "Recently added",
+        })
+      );
+      setTemplates(dbTemplates);
+    }
+  }, []);
 
   // ✅ Navigate to Template Studio with data
   const handleNext = () => {
     if (projectName && selectedTemplate) {
+      const selectedData = templates.find((tpl) => tpl.id === selectedTemplate);
       navigate("/new-project/template-studio", {
-        state: { projectName, template: selectedTemplate },
+        state: {
+          projectName,
+          templateId: selectedTemplate,
+          templateData: selectedData,
+        },
       });
     } else {
       alert("Please enter a project name and select a template.");
@@ -152,7 +168,7 @@ const SocialMediaPreset: React.FC = () => {
               {/* Image */}
               <div className="h-40 w-full overflow-hidden relative group">
                 <img
-                  src={CreativeImg}
+                  src={template.thumbnail || CreativeImg}
                   alt={template.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
