@@ -9,14 +9,13 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import CreativeImg from "../../assets/CreativeImage.png"; 
+import CreativeImg from "../../assets/CreativeImage.png";
 
 const SocialMediaPreset: React.FC = () => {
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
-  // ✅ Templates (just metadata)
   const templates = [
     { id: "template1", title: "Product Promotion", date: "2 months ago" },
     { id: "template2", title: "Event Announcement", date: "3 months ago" },
@@ -28,9 +27,10 @@ const SocialMediaPreset: React.FC = () => {
     { id: "template8", title: "Launch Countdown", date: "2 months ago" },
   ];
 
+  // ✅ Navigate to Template Studio with data
   const handleNext = () => {
     if (projectName && selectedTemplate) {
-      navigate(`/new-project/editor`, {
+      navigate("/new-project/template-studio", {
         state: { projectName, template: selectedTemplate },
       });
     } else {
@@ -39,9 +39,9 @@ const SocialMediaPreset: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-emerald-50 to-emerald-100 flex font-sans text-gray-800">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gradient-to-b from-emerald-600 to-emerald-400 flex flex-col p-6 text-white shadow-xl">
+    <div className="h-screen flex font-sans text-gray-800 overflow-hidden">
+      {/* Sidebar (Fixed) */}
+      <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-emerald-600 to-emerald-400 flex flex-col p-6 text-white shadow-xl">
         <h1
           className="text-xl font-bold mb-10 tracking-wide cursor-pointer"
           onClick={() => navigate("/dashboard")}
@@ -81,8 +81,8 @@ const SocialMediaPreset: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-12 relative">
-        {/* Soft floating blur decoration */}
+      <main className="flex-1 ml-64 overflow-y-auto p-12 bg-gradient-to-br from-white via-emerald-50 to-emerald-100 relative">
+        {/* Background Blur Effect */}
         <motion.div
           className="absolute top-20 right-20 w-64 h-64 bg-emerald-200/40 rounded-full blur-3xl"
           animate={{ scale: [1, 1.1, 1] }}
@@ -135,21 +135,21 @@ const SocialMediaPreset: React.FC = () => {
           Select Template
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-          {templates.slice(0, 8).map((template, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10 pb-20">
+          {templates.map((template, i) => (
             <motion.div
               key={template.id}
               onClick={() => setSelectedTemplate(template.id)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`relative cursor-pointer rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all border ${
+              className={`relative cursor-pointer rounded-2xl overflow-hidden bg-white shadow-md transition-all duration-300 border ${
                 selectedTemplate === template.id
                   ? "border-emerald-500 ring-2 ring-emerald-300"
-                  : "border-transparent"
+                  : "border-transparent hover:shadow-lg hover:-translate-y-1"
               }`}
             >
-              {/* Template Image */}
+              {/* Image */}
               <div className="h-40 w-full overflow-hidden relative group">
                 <img
                   src={CreativeImg}
@@ -163,7 +163,7 @@ const SocialMediaPreset: React.FC = () => {
                 )}
               </div>
 
-              {/* Template Info */}
+              {/* Info */}
               <div className="p-4 flex flex-col justify-between">
                 <h3 className="text-md font-semibold text-gray-800 line-clamp-1">
                   {template.title}
@@ -175,7 +175,7 @@ const SocialMediaPreset: React.FC = () => {
         </div>
 
         {/* Next Button */}
-        <div className="text-right mt-12 relative z-10">
+        <div className="text-right mt-12 relative z-10 pb-10">
           <motion.button
             onClick={handleNext}
             whileHover={{ scale: 1.05 }}
