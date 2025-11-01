@@ -13,6 +13,14 @@ import {
   RectangleHorizontal,
   RectangleVertical,
 } from "lucide-react";
+import {
+  FaInstagram,
+  FaFacebook,
+  FaLinkedin,
+  FaTelegram,
+  FaXTwitter,
+  FaTiktok,
+} from "react-icons/fa6";
 
 type RatioKey = "square" | "portrait" | "landscape" | "story";
 
@@ -23,7 +31,7 @@ const RATIO_META: Record<
     dims: string;
     w: number;
     h: number;
-    platforms: string[];
+    platforms: { name: string; icon: React.ReactNode }[];
     icon: React.ReactNode;
   }
 > = {
@@ -32,7 +40,11 @@ const RATIO_META: Record<
     dims: "1080 × 1080",
     w: 1080,
     h: 1080,
-    platforms: ["Instagram", "Facebook", "X", "LinkedIn", "TikTok"],
+    platforms: [
+      { name: "Instagram", icon: <FaInstagram /> },
+      { name: "Facebook", icon: <FaFacebook /> },
+      { name: "LinkedIn", icon: <FaLinkedin /> },
+    ],
     icon: <Square size={24} />,
   },
   portrait: {
@@ -40,7 +52,10 @@ const RATIO_META: Record<
     dims: "1080 × 1350",
     w: 1080,
     h: 1350,
-    platforms: ["Instagram", "Facebook"],
+    platforms: [
+      { name: "Instagram", icon: <FaInstagram /> },
+      { name: "Facebook", icon: <FaFacebook /> },
+    ],
     icon: <RectangleVertical size={24} />,
   },
   landscape: {
@@ -48,7 +63,11 @@ const RATIO_META: Record<
     dims: "1200 × 628",
     w: 1200,
     h: 628,
-    platforms: ["Facebook", "LinkedIn"],
+    platforms: [
+      { name: "Facebook", icon: <FaFacebook /> },
+      { name: "LinkedIn", icon: <FaLinkedin /> },
+      { name: "X", icon: <FaXTwitter /> },
+    ],
     icon: <RectangleHorizontal size={24} />,
   },
   story: {
@@ -56,7 +75,11 @@ const RATIO_META: Record<
     dims: "1080 × 1920",
     w: 1080,
     h: 1920,
-    platforms: ["Instagram", "Facebook", "TikTok"],
+    platforms: [
+      { name: "Instagram", icon: <FaInstagram /> },
+      { name: "TikTok", icon: <FaTiktok /> },
+      { name: "Telegram", icon: <FaTelegram /> },
+    ],
     icon: <Smartphone size={24} />,
   },
 };
@@ -67,33 +90,11 @@ const TemplateStudio: React.FC = () => {
 
   const incoming = (location.state as any) || {};
   const incomingProject = incoming.projectName || "";
-  const incomingTemplateId = incoming.template || null;
 
   const [projectName, setProjectName] = useState<string>(incomingProject);
   const [selectedRatio, setSelectedRatio] = useState<RatioKey>("square");
 
-  const previewTemplates = useMemo(
-    () => [
-      { id: "main1", name: "Main Square", ratio: "square" as RatioKey },
-      { id: "main2", name: "Vertical", ratio: "portrait" as RatioKey },
-      { id: "main3", name: "Horizontal", ratio: "landscape" as RatioKey },
-      { id: "main4", name: "Story", ratio: "story" as RatioKey },
-    ],
-    []
-  );
-
-  const canvasPreviewStyles = (ratio: RatioKey) => {
-    const meta = RATIO_META[ratio];
-    const MAX_W = 640;
-    const MAX_H = 420;
-    const scale = Math.min(MAX_W / meta.w, MAX_H / meta.h, 1);
-    const width = Math.round(meta.w * scale);
-    const height = Math.round(meta.h * scale);
-    return { width, height };
-  };
-
-  const { width: canvasW, height: canvasH } =
-    canvasPreviewStyles(selectedRatio);
+  const { title, dims, platforms, icon } = RATIO_META[selectedRatio];
 
   return (
     <div className="h-screen w-screen flex bg-gray-50 text-gray-900 font-sans overflow-hidden">
@@ -140,20 +141,14 @@ const TemplateStudio: React.FC = () => {
       {/* RIGHT SIDEBAR */}
       <aside className="hidden xl:flex flex-col fixed right-0 top-0 h-full w-72 bg-white border-l z-30 p-4">
         <div className="text-lg font-semibold mb-4">Tools</div>
-        <div className="space-y-4 overflow-auto">
-          <div className="border rounded-lg p-3">
-            <div className="text-xs text-gray-500 mb-2">Selected Size</div>
-            <div className="font-medium">{RATIO_META[selectedRatio].title}</div>
-            <div className="text-xs text-gray-400">
-              {RATIO_META[selectedRatio].dims}
-            </div>
-          </div>
+        <div className="border rounded-lg p-3 mb-4">
+          <div className="text-xs text-gray-500 mb-1">Selected Size</div>
+          <div className="font-medium">{title}</div>
+          <div className="text-xs text-gray-400">{dims}</div>
         </div>
-        <div className="mt-auto">
-          <button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-md flex items-center justify-center gap-2">
-            <Download size={16} /> Export Current
-          </button>
-        </div>
+        <button className="mt-auto w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-md flex items-center justify-center gap-2">
+          <Download size={16} /> Export
+        </button>
       </aside>
 
       {/* MAIN CENTER */}
@@ -163,7 +158,7 @@ const TemplateStudio: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               className="px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-500"
-              onClick={() => navigate("/new-project/select-size")}
+              onClick={() => navigate("/new-project/social-media")}
             >
               ← Back
             </button>
@@ -181,16 +176,15 @@ const TemplateStudio: React.FC = () => {
           </button>
         </div>
 
-        {/* Canvas Area */}
+        {/* Canvas Preview + Options */}
         <div className="flex-1 overflow-auto p-8 flex flex-col items-center">
           <div className="text-sm text-gray-600 mb-3">
-            Canvas preview — {RATIO_META[selectedRatio].title} •{" "}
-            {RATIO_META[selectedRatio].dims}
+            Canvas preview — {title} • {dims}
           </div>
 
           <div
             className="rounded-lg bg-white border border-gray-200 shadow-inner flex items-center justify-center"
-            style={{ width: canvasW, height: canvasH }}
+            style={{ width: 400, height: 300 }}
           >
             <div className="text-center">
               <div className="text-lg font-semibold text-gray-800">
@@ -212,13 +206,13 @@ const TemplateStudio: React.FC = () => {
                   key={key}
                   onClick={() => setSelectedRatio(key)}
                   whileHover={{ scale: 1.03 }}
-                  className={`p-4 rounded-2xl cursor-pointer border transition-all ${
+                  className={`p-5 rounded-2xl cursor-pointer border transition-all bg-white shadow-sm ${
                     active
                       ? "ring-2 ring-emerald-400 border-emerald-300"
-                      : "border-gray-200 bg-white"
+                      : "border-gray-200"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="bg-emerald-50 p-2 rounded">
                         {meta.icon}
@@ -235,18 +229,25 @@ const TemplateStudio: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {meta.platforms.map((p) => (
-                      <div
-                        key={p}
-                        className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700"
-                      >
-                        {p}
-                      </div>
-                    ))}
+                  {/* Suitable For */}
+                  <div className="mt-3">
+                    <div className="text-xs text-gray-500 mb-2">
+                      Suitable for
+                    </div>
+                    <div className="flex gap-3 text-xl text-gray-700">
+                      {meta.platforms.map((p) => (
+                        <div
+                          key={p.name}
+                          className="hover:text-emerald-600 transition"
+                          title={p.name}
+                        >
+                          {p.icon}
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-5 flex justify-end">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -254,7 +255,7 @@ const TemplateStudio: React.FC = () => {
                           state: { ratio: key },
                         });
                       }}
-                      className="text-xs px-3 py-1 rounded bg-emerald-600 text-white flex items-center gap-1"
+                      className="text-xs px-3 py-1 rounded bg-emerald-600 text-white flex items-center gap-1 hover:bg-emerald-500"
                     >
                       Open <ArrowRight size={12} />
                     </button>
