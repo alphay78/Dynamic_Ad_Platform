@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Generator (Merged)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="templates.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* This section is for the new visual zoom from File 2.
+         It scales the container, not the canvas.
+        */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 600px; /* Give the wrapper a fixed height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Hide parts of the canvas that are zoomed in */
+        }
+        
+        #canvas-container {
+            /* This is the container that will be scaled */
+            width: 500px; /* Visual size on page */
+            height: 500px; /* Visual size on page */
+            transform-origin: center center;
+            transition: transform 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Styles for the Template Modal (from File 1) */
+        #template-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); display: flex;
+            align-items: center; justify-content: center; z-index: 50;
+        }
+        #template-modal {
+            background-color: white; border-radius: 8px; width: 90%;
+            max-width: 60rem; max-height: 90vh; overflow-y: auto;
+        }
+
+        /* Refined color input style from File 2 */
+        input[type="color"] {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            border: 1px solid #d1d5db; width: 100%; height: 40px;
+            padding: 0; cursor: pointer; border-radius: 6px;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 4px; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-100 m-0 font-sans">
+
+    <input type="file" id="templateFileInput" accept=".json" class="hidden">
+
+    <div class="flex flex-col h-screen">
+
+        <header class="bg-white p-4 shadow-md flex items-center justify-between z-10">
+            <h1 class="text-xl font-bold text-gray-800">Ad Generator</h1>
+            <div class="flex gap-4 items-center">
+               
+                <div class="flex items-center space-x-2">
+                    <label class="block text-sm font-medium text-gray-700">Zoom: <span id="zoomValue" class="font-bold text-indigo-600">64%</span></label>
+                    <button id="zoom-out" title="Zoom out" class="text-md bg-gray-200 text-gray-700 w-8 h-8 rounded-full hover:bg-gray-300 transition">-</button>
+                    <input type="range" id="zoomSlider" min="25" max="200" value="64" class="w-32 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <button id="zoom-in" title="Zoom in" class="text-md bg-gray-200 text-gray-700 w-8 h-8 rounded-full hover:bg-gray-300 transition">+</button>
+                    <button id="zoom-reset" class="text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600 transition shadow-sm">Reset</button>
+                </div>
+
+                <button id="export-png-btn" class="bg-green-500 text-white font-bold py-2 px-5 text-lg rounded-lg shadow hover:bg-green-600 transition">
+                    Export as PNG
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            
+            <aside class="w-80 bg-white p-4 overflow-y-auto shadow-lg space-y-4">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Tools</h2>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-700">Canvas BG Color:</label>
+                    <input type="color" id="bg-color-picker" class="w-full" value="#fcfcfc">
+                </div>
+                
+                <hr>
+
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Add Elements</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="add-title-btn" class="text-sm bg-indigo-500 text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition shadow-sm">Title</button>
+                        <button id="add-subtitle-btn" class="text-sm bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition shadow-sm">Subtitle</button>
+                        <button id="add-button-btn" class="text-sm bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 transition shadow-sm">Button</button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Add Image</h3>
+                    <label for="add-image-input" class="w-full text-center bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition cursor-pointer block">
+                        Add from File
+                        <input type="file" id="add-image-input" class="hidden" accept="image/*">
+                    </label>
+                    <div class="flex space-x-2 mt-2">
+                        <input type="text" id="image-url-input" class="w-full border border-gray-300 p-2 text-sm rounded-lg" placeholder="Or paste image URL...">
+                        <button id="add-image-url-btn" class="bg-blue-500 text-white text-sm px-3 rounded-lg hover:bg-blue-600 transition">Add</button>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Layer Controls</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="move-to-front-btn" class="text-sm bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition">Bring to Front</button>
+                        <button id="send-to-back-btn" class="text-sm bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition">Send to Back</button>
+                        <button id="move-forward-btn" class="text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition">Bring Forward</button>
+                        <button id="send-backward-btn" class="text-sm bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition">Send Backward</button>
+
+                        <button id="lock-selected-btn" class="text-sm bg-yellow-500 text-black py-2 px-4 rounded-lg hover:bg-yellow-600 transition">🔒 Lock Selected</button>
+                        <button id="unlock-all-btn" class="text-sm bg-yellow-300 text-black py-2 px-4 rounded-lg hover:bg-yellow-400 transition">🔓 Unlock All</button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-2">Project</h3>
+                    <div class="space-y-2">
+                         <button id="export-template-btn" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition text-sm shadow-md">💾 Export Template (.json)</button>
+                         <button id="import-template-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm shadow-md">📁 Import Template (.json)</button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <button id="delete-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-red-600 transition">
+                    🗑️ Delete Selected
+                </button>
+                
+
+                <div id="text-controls" class="hidden mt-6 space-y-3">
+                    <hr>
+                    <h3 class="font-semibold text-gray-700">Text Controls:</h3>
+                    
+                    <label class="block text-sm font-medium text-gray-700">Font:</label>
+                    <select id="font-family-select" class="w-full border border-gray-300 rounded-lg p-2"></select>
+
+                    <label class="block text-sm font-medium text-gray-700">Font Size:</label>
+                    <input type="number" id="font-size-input" min="10" max="300" class="w-full border border-gray-300 rounded-lg p-2">
+
+                    <label class="block text-sm font-medium text-gray-700">Text Color:</label>
+                    <input type="color" id="text-color-picker" class="w-full" value="#000000">
+                </div>
+                
+                <div id="button-controls" class="hidden mt-6 space-y-3">
+                    <hr>
+                    <h3 class="font-semibold text-gray-700">Button Controls:</h3>
+                    
+                    <label class="block text-sm font-medium text-gray-700">Button BG Color:</label>
+                    <input type="color" id="button-color-picker" class="w-full" value="#fcd34d">
+                </div>
+                
+            </aside>
+
+            <main class="flex-1 p-8 bg-gray-100 flex items-center justify-center overflow-auto">
+                <div class="canvas-wrapper">
+                    <div id="canvas-container">
+                        <canvas id="my-canvas"></canvas>
+                    </div>
+                </div>
+            </main>
+
+        </div>
+    </div>
+
+
+    <script>
+        // --- Wait for the page to be ready ---
+        window.addEventListener('load', () => {
+            
+            // --- Initialize Canvas ---
+            const canvas = new fabric.Canvas('my-canvas', {
+                width: 1080,
+                height: 1080,
+                backgroundColor: '#fcfcfc',
+                selection: true,
+                controlsAboveOverlay: true
+            });
+            
+            // --- Constants ---
+            let CANVAS_WIDTH = 1080;
+            let CANVAS_HEIGHT = 1080;
+            const FONT_OPTIONS = ['Inter', 'Roboto', 'Poppins', 'Arial', 'Verdana', 'Georgia'];
+            let currentZoom = 0.64; // Default zoom
+            let logoObject = null; // Used by initial template
+            
+            // --- Get all the HTML elements ---
+            const bgColorPicker = document.getElementById('bg-color-picker');
+            const addImageInput = document.getElementById('add-image-input');
+            const deleteBtn = document.getElementById('delete-btn');
+            const exportPngBtn = document.getElementById('export-png-btn');
+            
+            const textControls = document.getElementById('text-controls');
+            const fontFamilySelect = document.getElementById('font-family-select');
+            const fontSizeInput = document.getElementById('font-size-input');
+            const textColorPicker = document.getElementById('text-color-picker');
+            
+            const buttonControls = document.getElementById('button-controls');
+            const buttonColorPicker = document.getElementById('button-color-picker');
+            
+            const addTitleBtn = document.getElementById('add-title-btn');
+            const addSubtitleBtn = document.getElementById('add-subtitle-btn');
+            const addButtonBtn = document.getElementById('add-button-btn');
+            
+            const imageUrlInput = document.getElementById('image-url-input');
+            const addImageUrlBtn = document.getElementById('add-image-url-btn');
+
+            const exportTemplateBtn = document.getElementById('export-template-btn');
+            const importTemplateBtn = document.getElementById('import-template-btn');
+            const templateFileInput = document.getElementById('templateFileInput');
+            
+            const moveToFrontBtn = document.getElementById('move-to-front-btn');
+            const sendToBackBtn = document.getElementById('send-to-back-btn');
+            const moveForwardBtn = document.getElementById('move-forward-btn');
+            const sendBackwardBtn = document.getElementById('send-backward-btn');
+
+            const zoomSlider = document.getElementById('zoomSlider');
+            const zoomValue = document.getElementById('zoomValue');
+            const zoomInBtn = document.getElementById('zoom-in');
+            const zoomOutBtn = document.getElementById('zoom-out');
+            const zoomResetBtn = document.getElementById('zoom-reset');
+
+            // ADD THESE TWO LINES
+            const lockSelectedBtn = document.getElementById('lock-selected-btn');
+            const unlockAllBtn = document.getElementById('unlock-all-btn');
+
+
+            // --- NEW Zoom Logic (from File 2) ---
+            function updateZoom(zoomLevel) {
+                currentZoom = parseInt(zoomLevel) / 100;
+                if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+                const canvasContainer = document.getElementById('canvas-container');
+                if (canvasContainer) {
+                    canvasContainer.style.transform = `scale(${currentZoom})`;
+                }
+                canvas.renderAll();
+            }
+            
+            function zoomIn() {
+                let newZoom = Math.min(currentZoom * 100 + 25, 200);
+                zoomSlider.value = newZoom;
+                updateZoom(newZoom);
+            }
+            
+            function zoomOut() {
+                let newZoom = Math.max(currentZoom * 100 - 25, 25);
+                zoomSlider.value = newZoom;
+                updateZoom(newZoom);
+            }
+            
+            function resetZoom() {
+                zoomSlider.value = 64; // Reset to default
+                updateZoom(64);
+            }
+            
+            // --- Contextual Controls Logic (from File 2) ---
+            
+            function onSelectionChanged() {
+                const activeObject = canvas.getActiveObject();
+                
+                // Hide all controls first
+                textControls.classList.add('hidden');
+                buttonControls.classList.add('hidden');
+
+                if (!activeObject) return;
+
+                let targetTextObject = null;
+                let isButton = activeObject.isButton;
+
+                if (isButton) {
+                    targetTextObject = activeObject.text; 
+                } else if (activeObject instanceof fabric.IText || activeObject instanceof fabric.Textbox) {
+                    targetTextObject = activeObject;
+                }
+
+                // Show Text Controls
+                if (targetTextObject) {
+                    textControls.classList.remove('hidden');
+                    fontSizeInput.value = targetTextObject.fontSize;
+                    fontFamilySelect.value = targetTextObject.fontFamily;
+                    textColorPicker.value = targetTextObject.fill;
+                } 
+                
+                // Show Button Controls
+                if (isButton) {
+                    buttonControls.classList.remove('hidden');
+                    const buttonRect = activeObject.rect;
+                    if (buttonRect) {
+                        buttonColorPicker.value = buttonRect.fill;
+                    }
+                }
+            }
+
+            function updateTextStyle(property, value) {
+                let activeObject = canvas.getActiveObject();
+                if (!activeObject) return;
+                
+                let targetObject = activeObject.isButton ? activeObject.text : activeObject;
+
+                if (targetObject instanceof fabric.IText || targetObject instanceof fabric.Textbox) {
+                    if (property === 'fontSize') {
+                        value = parseInt(value);
+                        if (isNaN(value) || value < 10) value = 10;
+                    }
+                    
+                    targetObject.set(property, value);
+                    
+                    if (targetObject.isButtonText) {
+                        targetObject.fire('changed'); // Custom event for button resizing
+                    }
+
+                    canvas.renderAll();
+                }
+            }
+
+            function updateButtonColor(color) {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject && activeObject.isButton) {
+                    activeObject.rect.set('fill', color);
+                    canvas.renderAll();
+                }
+            }
+
+            
+            // --- Add Element Functions (from File 2) ---
+            
+            function createButton(text, left, top, color = '#fcd34d') {
+                const rectPadding = 60;
+                const rectHeightPadding = 30;
+
+                const buttonText = new fabric.IText(text, {
+                    fontSize: 40,
+                    fill: '#1f2937', 
+                    fontWeight: 'bold',
+                    originX: 'center',
+                    originY: 'center',
+                    hasControls: false,
+                    editable: true,
+                    fontFamily: 'Inter',
+                });
+                buttonText.isButtonText = true;
+
+                let rectWidth = buttonText.width + rectPadding;
+                let rectHeight = buttonText.height + rectHeightPadding;
+
+                const buttonRect = new fabric.Rect({
+                    fill: color, width: rectWidth, height: rectHeight,
+                    rx: 15, ry: 15, originX: 'center', originY: 'center',
+                });
+                buttonRect.isButtonRect = true;
+
+                const actionButton = new fabric.Group([buttonRect, buttonText], {
+                    left: left, top: top, originX: 'center', originY: 'center',
+                    name: 'actionButton', isButton: true, subTargetCheck: true,
+                    rect: buttonRect, text: buttonText,
+                });
+                
+                const resizeButtonRect = function() {
+                    const newWidth = Math.max(buttonText.width * buttonText.scaleX + rectPadding, 100);
+                    const newHeight = Math.max(buttonText.height * buttonText.scaleY + rectHeightPadding, 50);
+
+                    buttonRect.set({
+                        width: newWidth / buttonRect.scaleX, 
+                        height: newHeight / buttonRect.scaleY,
+                    });
+
+                    actionButton._calcBounds(true);
+                    canvas.requestRenderAll();
+                }
+
+                buttonText.on('changed', resizeButtonRect);
+                actionButton.on('scaling', resizeButtonRect);
+                return actionButton;
+            }
+
+            function addTitleText() {
+                const title = new fabric.Textbox('New Gospel Message', {
+                    left: CANVAS_WIDTH / 2, top: CANVAS_HEIGHT / 4,
+                    width: CANVAS_WIDTH * 0.8, fontSize: 85, fontWeight: '900',
+                    fill: '#6d28d9', textAlign: 'center', originX: 'center',
+                    originY: 'center', fontFamily: 'Inter', name: 'title_' + Date.now()
+                });
+                canvas.add(title);
+                canvas.setActiveObject(title);
+                canvas.renderAll();
+                onSelectionChanged();
+            }
+
+            function addSubtitleText() {
+                const subtitle = new fabric.Textbox('A New Testament truth for today.', {
+                    left: CANVAS_WIDTH / 2, top: CANVAS_HEIGHT / 2,
+                    width: CANVAS_WIDTH * 0.75, fontSize: 38, fill: '#4b5563',
+                    textAlign: 'center', originX: 'center', originY: 'center',
+                    fontFamily: 'Inter', name: 'subtitle_' + Date.now()
+                });
+                canvas.add(subtitle);
+                canvas.setActiveObject(subtitle);
+                canvas.renderAll();
+                onSelectionChanged();
+            }
+
+            function addActionButton() {
+                const actionButton = createButton('FIND OUT MORE', CANVAS_WIDTH / 2, CANVAS_HEIGHT * 0.75, '#fcd34d');
+                actionButton.name = 'actionButton_' + Date.now();
+                actionButton.text.set('fill', '#1f2937');
+                canvas.add(actionButton);
+                canvas.setActiveObject(actionButton);
+                canvas.renderAll();
+                onSelectionChanged();
+            }
+            
+            /**
+             * Loads the initial Gospel template elements.
+             */
+            function addInitialElements() {
+                // 1. Logo (Image)
+                const initialLogoUrl = 'https://placehold.co/150x150/6d28d9/ffffff?text=MINISTRY';
+                fabric.Image.fromURL(initialLogoUrl, function(img) {
+                    logoObject = img;
+                    logoObject.set({
+                        left: 90, top: 90,
+                        scaleX: 150 / img.width, scaleY: 150 / img.height,
+                        lockUniScaling: true, name: 'logo',
+                        clipPath: new fabric.Circle({ 
+                            radius: 75, left: -75, top: -75,
+                        })
+                    });
+                    canvas.add(logoObject);
+                    canvas.renderAll();
+                }, { crossOrigin: 'anonymous' });
+
+                // 2. Title Text
+                const title = new fabric.Textbox('Find Hope, Joy, & New Life', {
+                    left: CANVAS_WIDTH / 2, top: 350, width: CANVAS_WIDTH * 0.8,
+                    fontSize: 85, fontWeight: '900', fill: '#6d28d9',
+                    textAlign: 'center', originX: 'center', originY: 'center',
+                    fontFamily: 'Inter', name: 'title'
+                });
+                canvas.add(title);
+
+                // 3. Subtitle Text
+                const subtitle = new fabric.Textbox('Join us for Worship or Stream the Sunday Message.', {
+                    left: CANVAS_WIDTH / 2, top: 550, width: CANVAS_WIDTH * 0.75,
+                    fontSize: 38, fill: '#4b5563', textAlign: 'center',
+                    originX: 'center', originY: 'center', fontFamily: 'Inter', name: 'subtitle'
+                });
+                canvas.add(subtitle);
+
+                // 4. Action Button
+                const actionButton = createButton('WATCH LIVE NOW', CANVAS_WIDTH / 2, 800, '#fcd34d');
+                actionButton.text.set('fill', '#1f2937');
+                canvas.add(actionButton);
+
+                canvas.renderAll();
+            }
+            
+
+            // --- Basic Toolbar Functions (from File 1, modified) ---
+
+            // Background Color
+            bgColorPicker.addEventListener('input', (e) => {
+                canvas.backgroundColor = e.target.value;
+                canvas.renderAll();
+            });
+
+            // Add Image from File (Replaces BG Image & Logo)
+            // THIS IS THE NEW LOGIC - adds as a normal, selectable layer
+// Add Image from File (UPDATED)
+            addImageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (f) => {
+                    const data = f.target.result;
+                    fabric.Image.fromURL(data, (img) => {
+                        
+                        // NEW: Scale image to fill canvas (like a background)
+                        const canvasWidth = canvas.getWidth();
+                        const canvasHeight = canvas.getHeight();
+                        const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
+                        
+                        img.set({
+                            left: canvasWidth / 2,
+                            top: canvasHeight / 2,
+                            originX: 'center',
+                            originY: 'center',
+                            scaleX: scale,
+                            scaleY: scale,
+                            selectable: true, 
+                            evented: true
+                        });
+                        // END NEW
+                        
+                        canvas.add(img);
+                        img.sendToBack(); // <-- FIX: Send it to the back
+                        canvas.discardActiveObject(); // <-- FIX: Deselect it
+                        canvas.renderAll();
+                    });
+                };
+                reader.readAsDataURL(file);
+                e.target.value = null; // Clear input
+            });
+            
+// Add Image from URL (UPDATED)
+            function addImageFromUrl() {
+                const url = imageUrlInput.value;
+                if (!url) {
+                    alert('Please paste an image URL');
+                    return;
+                }
+                
+                fabric.Image.fromURL(url, function(img) {
+                    
+                    // NEW: Scale image to fill canvas (like a background)
+                    const canvasWidth = canvas.getWidth();
+                    const canvasHeight = canvas.getHeight();
+                    const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
+
+                    img.set({
+                        left: canvasWidth / 2,
+                        top: canvasHeight / 2,
+                        originX: 'center',
+                        originY: 'center',
+                        scaleX: scale,
+                        scaleY: scale,
+                        selectable: true, 
+                        evented: true
+                    });
+                    // END NEW
+                    
+                    canvas.add(img);
+                    img.sendToBack(); // <-- FIX: Send it to the back
+                    canvas.discardActiveObject(); // <-- FIX: Deselect it
+                    canvas.renderAll();
+                    imageUrlInput.value = ''; // Clear input
+                }, { crossOrigin: 'anonymous', onerror: (err) => {
+                    console.error("Failed to load image:", err);
+                    alert('Failed to load image. Make sure it is a valid URL and CORS is enabled.');
+                }});
+            }
+
+            // Delete Selected
+            deleteBtn.addEventListener('click', () => {
+                canvas.getActiveObjects().forEach((obj) => {
+                    canvas.remove(obj);
+                });
+                canvas.discardActiveObject().renderAll();
+            });
+            
+            // Export as PNG
+            exportPngBtn.addEventListener('click', () => {
+                try {
+                    canvas.discardActiveObject();
+                    canvas.renderAll();
+                    
+                    const dataURL = canvas.toDataURL({
+                        format: 'png',
+                        quality: 1.0,
+                        multiplier: 1 // Export at 1080x1080
+                    });
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = 'my-ad-design-1080.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (err) {
+                    console.error('Export failed:', err);
+                    alert('Export failed.');
+                }
+            });
+
+
+            // --- Template Functions (from File 2) ---
+
+            function exportTemplate() {
+                const templateName = prompt("Enter a name for this template:", "My Gospel Template");
+                if (!templateName) return;
+                
+                const canvasData = canvas.toObject(['name', 'isButton', 'isButtonText', 'isButtonRect']);
+                
+                const template = {
+                    name: templateName,
+                    data: {
+                        version: "5.3.0",
+                        backgroundColor: canvas.backgroundColor,
+                        objects: canvasData.objects
+                    }
+                };
+                
+                const templateJSON = JSON.stringify(template, null, 2);
+                const blob = new Blob([templateJSON], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${templateName.replace(/\s+/g, '_').toLowerCase()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert(`Template "${templateName}" exported!`);
+            }
+            
+            function importTemplate() {
+                templateFileInput.click();
+            }
+            
+            templateFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const template = JSON.parse(event.target.result);
+                        loadTemplate(template);
+                    } catch (error) {
+                        console.error("Error parsing template:", error);
+                        alert("Error loading template: Invalid file.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+
+            function loadTemplate(template) {
+                if (!template || !template.data) {
+                    alert("Invalid template format.");
+                    return;
+                }
+                
+                canvas.clear();
+                
+                if (template.data.backgroundColor) {
+                    canvas.setBackgroundColor(template.data.backgroundColor, canvas.renderAll.bind(canvas));
+                }
+                
+                // This is the key: we need to re-create the button groups
+                // because `loadFromJSON` doesn't handle custom properties/methods.
+                fabric.util.enlivenObjects(template.data.objects, function (objects) {
+                    canvas.clear(); // Clear again just in case
+                    objects.forEach(function (obj) {
+                        if (obj.isButton) {
+                            // Re-create the button to attach logic
+                            const buttonRect = obj.item(0);
+                            const buttonText = obj.item(1);
+                            
+                            const newButton = createButton(
+                                buttonText.text,
+                                obj.left,
+                                obj.top,
+                                buttonRect.fill
+                            );
+                            
+                            // Apply scaling and other properties
+                            newButton.scaleX = obj.scaleX;
+                            newButton.scaleY = obj.scaleY;
+                            newButton.angle = obj.angle;
+                            
+                            canvas.add(newButton);
+                        } else {
+                            // Add all other objects normally
+                            canvas.add(obj);
+                        }
+                    });
+                    
+                    canvas.renderAll();
+                    alert(`Template "${template.name}" loaded!`);
+                }, '');
+            }
+
+            // --- NEW Layer Control Functions ---
+            function moveLayer(direction) {
+                const obj = canvas.getActiveObject();
+                if (!obj) return;
+                
+                switch(direction) {
+                    case 'front':
+                        obj.bringToFront();
+                        break;
+                    case 'back':
+                        obj.sendToBack();
+                        break;
+                    case 'forward':
+                        obj.bringForward();
+                        break;
+                    case 'backward':
+                        obj.sendBackwards();
+                        break;
+                }
+                canvas.renderAll();
+            }
+
+            // --- Initial Setup & Event Listeners ---
+            
+            // Populate Font Dropdown
+            FONT_OPTIONS.forEach(font => {
+                const option = document.createElement('option');
+                option.value = font;
+                option.textContent = font;
+                fontFamilySelect.appendChild(option);
+            });
+            
+            // Contextual control listeners
+            fontFamilySelect.addEventListener('change', (e) => updateTextStyle('fontFamily', e.target.value));
+            fontSizeInput.addEventListener('input', (e) => updateTextStyle('fontSize', e.target.value));
+            textColorPicker.addEventListener('input', (e) => updateTextStyle('fill', e.target.value));
+            buttonColorPicker.addEventListener('input', (e) => updateButtonColor(e.target.value));
+
+            // Canvas selection listeners
+            canvas.on('selection:created', onSelectionChanged);
+            canvas.on('selection:updated', onSelectionChanged);
+            canvas.on('selection:cleared', onSelectionChanged);
+
+            // Double-click to edit text
+            canvas.on('mouse:dblclick', function(options) {
+                if (!options.target) return;
+                let targetObject = options.target.isButton ? options.target.text : options.target;
+                if (targetObject instanceof fabric.IText || targetObject instanceof fabric.Textbox) {
+                    canvas.setActiveObject(targetObject);
+                    targetObject.enterEditing();
+                    canvas.renderAll();
+                }
+            });
+            
+            // Add element listeners
+            addTitleBtn.addEventListener('click', addTitleText);
+            addSubtitleBtn.addEventListener('click', addSubtitleText);
+            addButtonBtn.addEventListener('click', addActionButton);
+            addImageUrlBtn.addEventListener('click', addImageFromUrl);
+            
+            // Template listeners
+            exportTemplateBtn.addEventListener('click', exportTemplate);
+            importTemplateBtn.addEventListener('click', importTemplate);
+            
+            // Layer listeners
+            moveToFrontBtn.addEventListener('click', () => moveLayer('front'));
+            sendToBackBtn.addEventListener('click', () => moveLayer('back'));
+            moveForwardBtn.addEventListener('click', () => moveLayer('forward'));
+            sendBackwardBtn.addEventListener('click', () => moveLayer('backward'));
+            
+            // Zoom listeners
+            zoomSlider.addEventListener('input', (e) => updateZoom(e.target.value));
+            zoomInBtn.addEventListener('click', zoomIn);
+            zoomOutBtn.addEventListener('click', zoomOut);
+            zoomResetBtn.addEventListener('click', resetZoom);
+
+            // Zoom listeners
+            zoomSlider.addEventListener('input', (e) => updateZoom(e.target.value));
+            zoomInBtn.addEventListener('click', zoomIn);
+            zoomOutBtn.addEventListener('click', zoomOut);
+            zoomResetBtn.addEventListener('click', resetZoom);
+
+            // --- NEW Lock Control Listeners ---
+            lockSelectedBtn.addEventListener('click', () => {
+                const obj = canvas.getActiveObject();
+                if (obj) {
+                    // Lock the object by making it unselectable
+                    obj.set({
+                        selectable: false,
+                        evented: false, // 'evented: false' stops it from being clicked
+                    });
+                    canvas.discardActiveObject(); // Deselect it
+                    canvas.renderAll();
+                    console.log('Object locked');
+                }
+            });
+
+            unlockAllBtn.addEventListener('click', () => {
+                // We must unlock ALL objects, since a locked object
+                // cannot be selected to be unlocked individually.
+                canvas.getObjects().forEach(obj => {
+                    obj.set({
+                        selectable: true,
+                        evented: true,
+                    });
+                });
+                canvas.renderAll();
+                console.log('All objects unlocked');
+            });
+
+            // --- Load Initial State ---
+            addInitialElements(); // Load the default Gospel template
+            updateZoom(64); // Set default zoom
+
+            (function autoLoadFromQuery() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const tid = params.get('templateId');
+                    if (!tid) return;
+
+                    // NEW: Find the template data in the nested TEMPLATES_DB
+                    let templateData = null;
+                    if (window.TEMPLATES_DB) {
+                        // Loop through each group (e.g., "group_modern_dark")
+                        for (const groupId in window.TEMPLATES_DB) {
+                            const group = window.TEMPLATES_DB[groupId];
+                            // Check if the variant ID exists in this group
+                            if (group.variants && group.variants[tid]) {
+                                templateData = group.variants[tid].data;
+                                break; // Found it!
+                            }
+                        }
+                    }
+
+                    if (templateData) {
+                        console.log('[editor] autoLoadFromQuery, templateId=', tid);
+                        // Use the same universal loader from your editor
+                        universalTemplateLoader(templateData);
+                        // Ensure the modal is closed
+                        closeModal();
+                    } else {
+                        console.warn('Could not find template data for ID:', tid);
+                    }
+                } catch (err) {
+                    console.warn('Failed to auto-load template from query:', err);
+                }
+            })();
+
+        
+
+        });
+    </script>
+</body>
+</html>

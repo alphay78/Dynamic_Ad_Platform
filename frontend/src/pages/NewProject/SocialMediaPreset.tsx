@@ -7,9 +7,9 @@ import {
   LogOut,
   ArrowRight,
   CheckCircle,
+  PlusCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import CreativeImg from "../../assets/CreativeImage.png";
 
 declare global {
   interface Window {
@@ -19,11 +19,9 @@ declare global {
 
 const SocialMediaPreset: React.FC = () => {
   const navigate = useNavigate();
-  const [projectName, setProjectName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
 
-  // ✅ Load templates dynamically from window.TEMPLATES_DB
   useEffect(() => {
     if (window.TEMPLATES_DB && window.TEMPLATES_DB["square"]) {
       const dbTemplates = window.TEMPLATES_DB["square"].templates.map(
@@ -38,25 +36,31 @@ const SocialMediaPreset: React.FC = () => {
     }
   }, []);
 
-  // ✅ Navigate to Template Studio with data
   const handleNext = () => {
-    if (projectName && selectedTemplate) {
+    if (!selectedTemplate) {
+      alert("Please select a template to continue.");
+      return;
+    }
+
+    if (selectedTemplate === "blank") {
+      navigate("/new-project/template-studio", {
+        state: { projectName: "Untitled Canvas", templateId: "blank" },
+      });
+    } else {
       const selectedData = templates.find((tpl) => tpl.id === selectedTemplate);
       navigate("/new-project/template-studio", {
         state: {
-          projectName,
+          projectName: selectedData?.title || "Untitled Project",
           templateId: selectedTemplate,
           templateData: selectedData,
         },
       });
-    } else {
-      alert("Please enter a project name and select a template.");
     }
   };
 
   return (
-    <div className="h-screen flex font-sans text-gray-800 overflow-hidden">
-      {/* Sidebar (Fixed) */}
+    <div className="h-screen flex font-sans text-gray-800 overflow-hidden relative">
+      {/* Sidebar */}
       <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-emerald-600 to-emerald-400 flex flex-col p-6 text-white shadow-xl">
         <h1
           className="text-xl font-bold mb-10 tracking-wide cursor-pointer"
@@ -88,7 +92,7 @@ const SocialMediaPreset: React.FC = () => {
 
         <div className="pt-6 border-t border-white/20">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/login")}
             className="flex items-center gap-2 text-sm text-white/90 hover:text-white transition"
           >
             <LogOut size={16} /> Sign Out
@@ -96,81 +100,110 @@ const SocialMediaPreset: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 ml-64 overflow-y-auto p-12 bg-gradient-to-br from-white via-emerald-50 to-emerald-100 relative">
-        {/* Background Blur Effect */}
-        <motion.div
-          className="absolute top-20 right-20 w-64 h-64 bg-emerald-200/40 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 6, repeat: Infinity }}
-        ></motion.div>
+      {/* Background Motion Blobs */}
+      <motion.div
+        className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-emerald-200/50 rounded-full blur-3xl"
+        animate={{ y: [0, 20, 0], opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 10, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute bottom-[-120px] left-[200px] w-[300px] h-[300px] bg-emerald-100/60 rounded-full blur-3xl"
+        animate={{ y: [0, -15, 0], opacity: [0.8, 1, 0.8] }}
+        transition={{ duration: 9, repeat: Infinity }}
+      />
 
+      {/* Main Content */}
+      <main className="flex-1 ml-64 overflow-y-auto p-12 bg-gradient-to-br from-white via-emerald-50 to-emerald-100 relative z-10">
         {/* Header */}
-        <header className="flex justify-between items-center mb-10 relative z-10">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-1">
+        <header className="flex justify-between items-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight mb-1">
               Social Media Templates
             </h1>
             <p className="text-gray-600 text-sm">
-              Select a beautiful post template to begin your project.
+              Select a design or start with a blank, Spirit-led creation ✨
             </p>
-          </div>
-          <button
+          </motion.div>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/select-preset")}
             className="text-sm text-emerald-700 font-medium hover:underline"
           >
             ← Back
-          </button>
+          </motion.button>
         </header>
 
-        {/* Project Name Input */}
+        {/* Create Blank Canvas (left-aligned, plus icon) */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 max-w-lg bg-white/70 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-emerald-100"
+          onClick={() => setSelectedTemplate("blank")}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className={`cursor-pointer relative mb-16 max-w-xs h-56 flex flex-col items-center justify-center rounded-2xl bg-white/70 backdrop-blur-lg border border-emerald-100 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            selectedTemplate === "blank"
+              ? "ring-2 ring-emerald-400 border-emerald-400"
+              : ""
+          }`}
         >
-          <label
-            htmlFor="projectName"
-            className="block text-sm font-semibold text-gray-700 mb-2"
+          {/* Plus Icon instead of image */}
+          <motion.div
+            animate={{ rotate: [0, 3, -3, 0] }}
+            transition={{ duration: 4, repeat: Infinity }}
           >
-            Project Name
-          </label>
-          <input
-            id="projectName"
-            type="text"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            placeholder="Enter your project name"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white/70"
-          />
+            <PlusCircle
+              size={50}
+              className="text-emerald-500 mb-3 opacity-90"
+            />
+          </motion.div>
+
+          <h3 className="text-lg font-semibold text-gray-800">
+            Create Blank Canvas
+          </h3>
+          <p className="text-xs text-gray-500 mt-1 italic">
+            “Start from light, shape your message.”
+          </p>
+          {selectedTemplate === "blank" && (
+            <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center text-white rounded-2xl">
+              <CheckCircle size={28} />
+            </div>
+          )}
         </motion.div>
 
         {/* Template Grid */}
-        <h2 className="text-xl font-semibold mb-6 text-gray-700 relative z-10">
-          Select Template
-        </h2>
+        <motion.h2
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-xl font-semibold mb-6 text-gray-700"
+        >
+          Choose a Template
+        </motion.h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10 pb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-20">
           {templates.map((template, i) => (
             <motion.div
               key={template.id}
               onClick={() => setSelectedTemplate(template.id)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: i * 0.07 }}
+              whileHover={{ scale: 1.02 }}
               className={`relative cursor-pointer rounded-2xl overflow-hidden bg-white shadow-md transition-all duration-300 border ${
                 selectedTemplate === template.id
                   ? "border-emerald-500 ring-2 ring-emerald-300"
                   : "border-transparent hover:shadow-lg hover:-translate-y-1"
               }`}
             >
-              {/* Image */}
               <div className="h-40 w-full overflow-hidden relative group">
-                <img
-                  src={template.thumbnail || CreativeImg}
+                <motion.img
+                  src={template.thumbnail}
                   alt={template.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 {selectedTemplate === template.id && (
                   <div className="absolute inset-0 bg-emerald-600/50 flex items-center justify-center text-white">
@@ -179,9 +212,8 @@ const SocialMediaPreset: React.FC = () => {
                 )}
               </div>
 
-              {/* Info */}
-              <div className="p-4 flex flex-col justify-between">
-                <h3 className="text-md font-semibold text-gray-800 line-clamp-1">
+              <div className="p-4">
+                <h3 className="text-md font-semibold text-gray-800 truncate">
                   {template.title}
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">{template.date}</p>
@@ -191,12 +223,12 @@ const SocialMediaPreset: React.FC = () => {
         </div>
 
         {/* Next Button */}
-        <div className="text-right mt-12 relative z-10 pb-10">
+        <div className="text-right mt-12 pb-10">
           <motion.button
             onClick={handleNext}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-emerald-600 to-emerald-400 hover:from-emerald-500 hover:to-emerald-300 transition text-white px-8 py-3 rounded-full font-semibold flex items-center gap-2 ml-auto shadow-lg"
+            whileHover={{ scale: 1.07 }}
+            whileTap={{ scale: 0.96 }}
+            className="bg-gradient-to-r from-emerald-600 to-emerald-400 hover:from-emerald-500 hover:to-emerald-300 text-white px-10 py-3 rounded-full font-semibold flex items-center gap-2 ml-auto shadow-lg"
           >
             Generate <ArrowRight size={18} />
           </motion.button>

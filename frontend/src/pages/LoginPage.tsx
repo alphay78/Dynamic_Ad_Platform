@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const SparkIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg
+  <motion.svg
+    animate={{ rotate: [0, 5, -5, 0] }}
+    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
     className={className}
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
@@ -15,7 +18,7 @@ const SparkIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
       strokeLinejoin="round"
       d="M12 3v3m0 12v3m9-9h-3M6 12H3m13.364-6.364l-2.121 2.121M8.757 15.243l-2.121 2.121m0-9.9 2.121 2.122m6.486 6.486 2.121 2.121"
     />
-  </svg>
+  </motion.svg>
 );
 
 const LoginPage: React.FC = () => {
@@ -23,66 +26,86 @@ const LoginPage: React.FC = () => {
   const [showPwd, setShowPwd] = useState(false);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f9f6] font-sans">
-      {/* Container */}
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9f6] font-sans overflow-hidden">
+      {/* Wrapper */}
       <div className="flex w-[90%] max-w-6xl shadow-2xl rounded-3xl overflow-hidden bg-white">
-        {/* LEFT SIDE */}
-        <div className="relative flex flex-col justify-center items-center w-1/2 bg-gradient-to-br from-teal-700 to-emerald-500 text-white p-12 overflow-hidden">
-          {/* Decorative shapes */}
-          <div className="absolute top-10 left-16 w-56 h-56 bg-white opacity-10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-20 w-44 h-44 bg-white opacity-10 rounded-full blur-2xl"></div>
+        {/* LEFT SECTION */}
+        <div className="relative flex flex-col justify-center items-center w-1/2 bg-gradient-to-br from-emerald-600 to-teal-500 text-white p-12 overflow-hidden">
+          {/* Soft Glow */}
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-white/20 blur-3xl rounded-full" />
 
           {/* Content */}
-          <div className="relative z-10 max-w-md text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2 }}
+            className="relative z-10 text-center"
+          >
+            {/* Icon */}
             <div className="flex justify-center mb-8">
-              <div className="bg-white bg-opacity-20 p-4 rounded-full">
+              <motion.div
+                className="bg-white/20 p-4 rounded-full"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 3 }}
+              >
                 <SparkIcon className="w-10 h-10 text-white" />
-              </div>
+              </motion.div>
             </div>
 
-            <h1 className="text-5xl font-extrabold leading-tight mb-4">
-              Welcome Back,
-              <br />
-              <span className="block text-5xl font-extrabold">
-                Creative Messenger
-              </span>
-            </h1>
+            {/* Welcome Text */}
+            <motion.h2
+              className="text-2xl font-semibold text-white/90 mb-2 tracking-wide"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+            >
+              Welcome Back
+            </motion.h2>
 
-            <p className="text-lg text-white text-opacity-90 mb-8 leading-relaxed">
-              Empower your calling through creativity. Generate dynamic content
-              and video messages that share hope, faith, and inspiration with
-              the world.
+            {/* Main Title */}
+            <motion.h1
+              className="text-5xl font-extrabold leading-tight mb-4"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 1 }}
+            >
+              Creative <br /> Messenger
+            </motion.h1>
+
+            <p className="text-lg text-white/90 max-w-md mx-auto leading-relaxed">
+              Empower your calling through creativity. Bring light into every
+              digital space.
             </p>
-
-            <ul className="space-y-3 text-white text-opacity-95 font-medium text-base text-left">
-              <li>✨ Create impactful evangelism ads</li>
-              <li>✨ Design visuals powered by purpose</li>
-              <li>✨ Share truth through modern media</li>
-            </ul>
-          </div>
+          </motion.div>
         </div>
 
-        {/* RIGHT SIDE */}
-        <div className="flex-1 flex justify-center items-center p-10 bg-[#fafcfb]">
+        {/* RIGHT SECTION */}
+        <motion.div
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1 }}
+          className="flex-1 flex justify-center items-center p-10 bg-[#fafcfb]"
+        >
           <div className="bg-white rounded-2xl shadow-md p-10 w-full max-w-sm text-center">
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <div className="bg-teal-700 p-3 rounded-full">
+              <div className="bg-emerald-600 p-3 rounded-full">
                 <SparkIcon className="w-8 h-8 text-white" />
               </div>
             </div>
 
-            <h2 className="text-2xl font-semibold text-[#0f766e]">
+            <h2 className="text-2xl font-semibold text-emerald-700 mb-1">
               FaithFlow Studio
             </h2>
-            <p className="text-sm text-[#10b981] mb-6">
-              Create. Inspire. Evangelize.
+            <p className="text-sm text-emerald-500 mb-6">
+              Craft media that moves hearts.
             </p>
 
             <h3 className="text-lg font-semibold text-gray-700 mb-6">
-              Sign In to Continue
+              Sign In
             </h3>
 
+            {/* FORM */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -99,7 +122,7 @@ const LoginPage: React.FC = () => {
                   type="email"
                   placeholder="Enter your email"
                   required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
@@ -113,7 +136,7 @@ const LoginPage: React.FC = () => {
                     type={showPwd ? "text" : "password"}
                     placeholder="Enter your password"
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
                     type="button"
@@ -121,7 +144,7 @@ const LoginPage: React.FC = () => {
                     className="absolute right-3 top-2.5 text-gray-500"
                   >
                     {showPwd ? (
-                      // eye-off
+                      // Eye off
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -137,7 +160,7 @@ const LoginPage: React.FC = () => {
                         />
                       </svg>
                     ) : (
-                      // eye
+                      // Eye on
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -158,26 +181,28 @@ const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Sign in Button */}
-              <button
+              {/* Submit Button */}
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 type="submit"
-                className="w-full bg-teal-700 text-white py-2 rounded-lg hover:bg-teal-800 transition-colors font-medium"
+                className="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
               >
                 Sign In
-              </button>
+              </motion.button>
             </form>
 
             <p className="mt-4 text-sm text-gray-600">
               Don’t have an account?{" "}
               <button
                 onClick={() => navigate("/register")}
-                className="text-teal-700 font-semibold hover:underline"
+                className="text-emerald-600 font-semibold hover:underline"
               >
                 Join the Mission
               </button>
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

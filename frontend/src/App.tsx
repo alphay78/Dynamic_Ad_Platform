@@ -12,16 +12,10 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Landing Page */}
+
         <Route path="/" element={<LandingPage />} />
-
-        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
-
-        {/* Main App Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* New Project Flow */}
         <Route path="/select-preset" element={<SelectPreset />} />
         <Route
           path="/new-project/social-media"

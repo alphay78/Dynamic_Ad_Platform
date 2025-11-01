@@ -7,7 +7,9 @@ import {
   LayoutDashboard,
   Image,
   Settings,
+  PlayCircle,
 } from "lucide-react";
+import projectThumb from "../assets/CreativeImage.png"; 
 
 const StudioDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +29,48 @@ const StudioDashboard: React.FC = () => {
       type: "Design Set",
       status: "Published",
     },
+    {
+      id: 3,
+      title: "Gospel Shorts Pack",
+      date: "Oct 20, 2025",
+      type: "Video Set",
+      status: "Published",
+    },
+    {
+      id: 4,
+      title: "Light in the City",
+      date: "Oct 15, 2025",
+      type: "Ad Campaign",
+      status: "Draft",
+    },
+    {
+      id: 5,
+      title: "Grace Story Ads",
+      date: "Oct 10, 2025",
+      type: "Video Template",
+      status: "Published",
+    },
+    {
+      id: 6,
+      title: "Youth Hope Clips",
+      date: "Oct 8, 2025",
+      type: "Video Set",
+      status: "Draft",
+    },
+    {
+      id: 7,
+      title: "Gospel Design Pack",
+      date: "Oct 6, 2025",
+      type: "Design Set",
+      status: "Published",
+    },
+    {
+      id: 8,
+      title: "Mission Focus Reel",
+      date: "Oct 4, 2025",
+      type: "Ad Campaign",
+      status: "Published",
+    }
   ];
 
   return (
@@ -48,7 +92,7 @@ const StudioDashboard: React.FC = () => {
             className="flex items-center w-full gap-3 px-3 py-2 rounded-lg hover:bg-white/20 transition"
             onClick={() => navigate("/creatives")}
           >
-            <Image size={18} /> Creatives
+            <Image size={18} /> Export History
           </button>
           <button
             className="flex items-center w-full gap-3 px-3 py-2 rounded-lg hover:bg-white/20 transition"
@@ -60,7 +104,7 @@ const StudioDashboard: React.FC = () => {
 
         <div className="pt-6 border-t border-white/20">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/login")}
             className="flex items-center gap-2 text-sm text-white/90 hover:text-white transition"
           >
             <LogOut size={16} /> Sign Out
@@ -74,7 +118,9 @@ const StudioDashboard: React.FC = () => {
         <header className="flex justify-between items-center mb-10">
           <div>
             <h1 className="text-3xl font-semibold text-gray-800">Dashboard</h1>
-            <p className="text-gray-500 mt-1">Welcome back, Creator ✨</p>
+            <p className="text-gray-500 mt-1">
+              Welcome back, Creative Messenger ✨
+            </p>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -117,56 +163,49 @@ const StudioDashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Projects Table */}
+        {/* Projects Cards Section */}
         <section>
           <h2 className="text-lg font-semibold mb-4 text-gray-700">
             Recent Projects
           </h2>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="py-3 px-4">Name</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Last Modified</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map((proj) => (
-                  <tr
-                    key={proj.id}
-                    className="hover:bg-emerald-50 transition border-t border-gray-100"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {projects.map((proj) => (
+              <div
+                key={proj.id}
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition cursor-pointer"
+                onClick={() => navigate(`/project/${proj.id}`)}
+              >
+                {/* Image at the top */}
+                <div className="relative">
+                  <img
+                    src={projectThumb}
+                    alt={proj.title}
+                    className="w-full h-32 object-cover"
+                  />
+                  <span
+                    className={`absolute top-2 right-2 px-2 py-1 rounded-md text-xs ${
+                      proj.status === "Published"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
                   >
-                    <td className="py-3 px-4 font-medium text-gray-800">
-                      {proj.title}
-                    </td>
-                    <td className="py-3 px-4 text-gray-500">{proj.type}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-md text-xs ${
-                          proj.status === "Published"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {proj.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-500">{proj.date}</td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => navigate(`/project/${proj.id}`)}
-                        className="text-emerald-600 hover:underline"
-                      >
-                        Open
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    {proj.status}
+                  </span>
+                </div>
+
+                {/* Card body */}
+                <div className="p-4">
+                  <h3 className="text-md font-semibold text-gray-800 mb-1">
+                    {proj.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-2">{proj.type}</p>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>{proj.date}</span>
+                    <PlayCircle size={16} className="text-emerald-500" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </main>
