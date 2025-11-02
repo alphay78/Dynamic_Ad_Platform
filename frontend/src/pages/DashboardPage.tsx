@@ -119,7 +119,7 @@ const StudioDashboard: React.FC = () => {
           <div>
             <h1 className="text-3xl font-semibold text-gray-800">Dashboard</h1>
             <p className="text-gray-500 mt-1">
-              Welcome back,  ✨
+              Welcome back, Bikila  ✨
             </p>
           </div>
 
