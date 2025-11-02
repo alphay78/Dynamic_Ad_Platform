@@ -55,6 +55,8 @@ const SocialMediaPreset: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templates, setTemplates] = useState<FlatTemplateData[]>([]);
 
+// In SocialMediaPreset component:
+
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "/templates.js";
@@ -62,21 +64,24 @@ const SocialMediaPreset: React.FC = () => {
     script.onload = () => {
       const db: TemplateDB = window.TEMPLATES_DB || {};
 
-      const groups = Object.values(db) as TemplateGroup[];
-
-      const flatTemplates: FlatTemplateData[] = groups.flatMap(group => {
-        return Object.values(group.variants).map((variant: TemplateVariant) => ({
-          id: variant.id,
-          // FIX: The component uses 'title' and 'name' interchangeably; set both to variant.name
-          title: variant.name, 
-          name: variant.name, 
-          thumbnail: variant.thumbnail,
-          dimensions: variant.dimensions,
-          data: variant.data,
-          // FIX: Add the expected 'date' property
-          date: "Recently added", 
-        }));
-      });
+      const flatTemplates: FlatTemplateData[] = Object.entries(db).flatMap(
+        ([groupId, group]) => {
+          return Object.values(group.variants).map(
+            (variant: TemplateVariant) => ({
+              // 🏆 CRITICAL FIX: Create a globally unique ID
+              id: `${groupId}-${variant.id}`, 
+              groupId: groupId, 
+              variantId: variant.id,
+              title: variant.name, 
+              name: variant.name, 
+              thumbnail: variant.thumbnail,
+              dimensions: variant.dimensions,
+              data: variant.data,
+              date: "Recently added", 
+            })
+          );
+        }
+      );
 
       setTemplates(flatTemplates);
     };
