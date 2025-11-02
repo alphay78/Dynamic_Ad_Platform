@@ -78,7 +78,7 @@ const StudioDashboard: React.FC = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-gradient-to-b from-emerald-600 to-emerald-400 flex flex-col p-6 text-white">
         <h1 className="text-xl font-bold mb-10 tracking-wide">
-          FaithFlow Studio
+          Gospel Ad
         </h1>
 
         <nav className="space-y-3 flex-1">
@@ -119,7 +119,7 @@ const StudioDashboard: React.FC = () => {
           <div>
             <h1 className="text-3xl font-semibold text-gray-800">Dashboard</h1>
             <p className="text-gray-500 mt-1">
-              Welcome back, Creative Messenger ✨
+              Welcome back,  ✨
             </p>
           </div>
 

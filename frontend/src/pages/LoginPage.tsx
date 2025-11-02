@@ -95,7 +95,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             <h2 className="text-2xl font-semibold text-emerald-700 mb-1">
-              FaithFlow Studio
+              Gospel Ad
             </h2>
             <p className="text-sm text-emerald-500 mb-6">
               Craft media that moves hearts.

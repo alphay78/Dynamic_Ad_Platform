@@ -125,7 +125,7 @@ const SocialMediaPreset: React.FC = () => {
           className="text-xl font-bold mb-10 tracking-wide cursor-pointer"
           onClick={() => navigate("/dashboard")}
         >
-          FaithFlow Studio
+          Gospel Ad
         </h1>
 
         <nav className="space-y-3 flex-1">

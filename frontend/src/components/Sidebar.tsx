@@ -11,7 +11,7 @@ const Sidebar: React.FC = () => {
         className="text-xl font-semibold mb-10 text-emerald-700 tracking-wide cursor-pointer"
         onClick={() => navigate("/dashboard")}
       >
-        FaithFlow Studio
+        Gospel Ad
       </h1>
 
       <nav className="space-y-2 flex-1">

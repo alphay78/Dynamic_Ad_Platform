@@ -90,7 +90,7 @@ const LandingPage: React.FC = () => {
           onClick={() => navigate("/")}
           className="text-2xl font-bold text-emerald-600 cursor-pointer"
         >
-          FaithFlow Studio
+          Gospel Ad
         </h1>
 
         <div className="space-x-6 hidden md:block">
