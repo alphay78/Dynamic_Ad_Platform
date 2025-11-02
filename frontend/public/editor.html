@@ -15,24 +15,30 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        .canvas-wrapper {
-            position: relative;
-            width: 100%;
-            height: 600px; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+        /* ADD THIS CSS to prevent overflow */
+        html, body, .flex-col {
+            overflow: hidden; 
+            /* This line is often necessary to stop scrollbars */
+        }
+        .flex-col {
+             height: 100vh; /* Ensure the top container fills the screen */
         }
         
         #canvas-container {
-            width: 500px; /* Default visual size */
-            height: 500px; /* Default visual size */
+            /* Max size of the viewing window */
+            max-width: 800px; 
+            max-height: 800px; 
+            
+            /* Define the *logical* size which will be scaled by JS */
+            width: 1080px; 
+            height: 1080px; 
+
             transform-origin: center center;
             transition: transform 0.2s ease, width 0.2s ease, height 0.2s ease;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e5e7eb;
         }
+        
         input[type="color"] {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
             border: 1px solid #d1d5db; width: 100%; height: 40px;
@@ -55,7 +61,7 @@
                 <div class="flex items-center space-x-2">
                     <label class="block text-sm font-medium text-gray-700">Zoom: <span id="zoomValue" class="font-bold text-indigo-600">64%</span></label>
                     <button id="zoom-out" title="Zoom out" class="text-md bg-gray-200 text-gray-700 w-8 h-8 rounded-full hover:bg-gray-300 transition">-</button>
-                    <input type="range" id="zoomSlider" min="25" max="200" value="64" class="w-32 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <input type="range" id="zoomSlider" min="25" max="200" class="w-32 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                     <button id="zoom-in" title="Zoom in" class="text-md bg-gray-200 text-gray-700 w-8 h-8 rounded-full hover:bg-gray-300 transition">+</button>
                     <button id="zoom-reset" class="text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600 transition shadow-sm">Reset</button>
                 </div>
@@ -157,8 +163,8 @@
                 
             </aside>
 
-            <main class="flex-1 p-8 bg-gray-100 flex items-center justify-center overflow-auto">
-                <div class="canvas-wrapper">
+            <main class="flex-1 px-8 py-8 bg-gray-100 flex items-center justify-center overflow-auto">
+                <div class="canvas-wrapper mb-48">
                     <div id="canvas-container">
                         <canvas id="my-canvas"></canvas>
                     </div>
@@ -749,8 +755,8 @@
                         
                         const canvasContainer = document.getElementById('canvas-container');
                         if (canvasContainer) {
-                            const maxWidth = 500;
-                            const maxHeight = 600;
+                            const maxWidth = 800;
+                            const maxHeight = 800;
                             const aspectRatio = newWidth / newHeight;
                             let displayWidth = maxWidth;
                             let displayHeight = displayWidth / aspectRatio;
@@ -854,8 +860,21 @@ function populateVariantsSidebar(groupId, variants) {
             loadButton.textContent = '🎨 Load';
             loadButton.addEventListener('click', async () => {
                 await loadTemplate(variantData);
-                updateZoom(64); // Reset zoom after loading new dimensions
-                alert(`Template '${variantData.name}' loaded! Click Export to save.`);
+
+                                            const maxVisualWidth = 800; 
+                            const maxVisualHeight = 800; 
+                            
+                            const fitRatioX = maxVisualWidth / CANVAS_WIDTH;
+                            const fitRatioY = maxVisualHeight / CANVAS_HEIGHT;
+                            
+                            // Use the minimum ratio to ensure it fits entirely (no cropping)
+                            const fitRatio = Math.min(fitRatioX, fitRatioY);
+                            
+                            const fitZoom = fitRatio * 100;
+
+                            populateVariantsSidebar(loadedTemplateGroupId, currentTemplateVariants);
+                            // Use the calculated zoom
+                            updateZoom(Math.min(fitZoom, 100));
             });
 
             // 2. Export Button (Single-Click Export from Sidebar)
@@ -1024,8 +1043,21 @@ function populateVariantsSidebar(groupId, variants) {
                         // Load the template (The AWAIT waits for the promise resolve in loadFromJSON)
                         loadTemplate(templateVariant).then(() => {
                             // After loading, populate the right sidebar
-                            populateVariantsSidebar(loadedTemplateGroupId, currentTemplateVariants); // <-- This should now run successfully
-                            updateZoom(64);
+
+                            const maxVisualWidth = 800; 
+                            const maxVisualHeight = 800; 
+                            
+                            const fitRatioX = maxVisualWidth / CANVAS_WIDTH;
+                            const fitRatioY = maxVisualHeight / CANVAS_HEIGHT;
+                            
+                            // Use the minimum ratio to ensure it fits entirely (no cropping)
+                            const fitRatio = Math.min(fitRatioX, fitRatioY);
+                            
+                            const fitZoom = fitRatio * 100;
+
+                            populateVariantsSidebar(loadedTemplateGroupId, currentTemplateVariants);
+                            // Use the calculated zoom
+                            updateZoom(Math.min(fitZoom, 100));
                         }).catch(err => {
                              console.error('Error loading template:', err);
                              addInitialElements(); 
