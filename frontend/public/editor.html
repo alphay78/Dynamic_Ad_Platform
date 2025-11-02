@@ -633,89 +633,96 @@
                 e.target.value = '';
             });
 
- // UPDATED to handle resizing from imported .json
-            function loadTemplate(template) {
-                if (!template || !template.data) {
-                    // Check for older format (just the data)
-                    if (template.objects) {
-                        template = { data: template, name: 'Imported' };
-                    } else {
-                        alert("Invalid template format.");
-                        return;
-                    }
+        // UPDATED to handle resizing from imported .json
+                // UPDATED to handle resizing and explicitly fix CORS
+        function loadTemplate(template) {
+            if (!template || !template.data) {
+                if (template.objects) {
+                    template = { data: template, name: 'Imported' };
+                } else {
+                    alert("Invalid template format.");
+                    return;
                 }
-                
-                // --- Step 1: Handle Resizing (Must happen before loading objects) ---
-                if (template.dimensions) {
-                    const dims = template.dimensions.split('x');
-                    const newWidth = parseInt(dims[0], 10);
-                    const newHeight = parseInt(dims[1], 10);
-                    
-                    if (newWidth && newHeight) {
-                        CANVAS_WIDTH = newWidth;
-                        CANVAS_HEIGHT = newHeight;
-                        
-                        // Resize visual container (omitted here for brevity, assume it's fixed elsewhere)
-                        const canvasContainer = document.getElementById('canvas-container');
-                        if (canvasContainer) {
-                            const maxWidth = 500;
-                            const maxHeight = 600;
-                            const aspectRatio = newWidth / newHeight;
-                            let displayWidth = maxWidth;
-                            let displayHeight = displayWidth / aspectRatio;
-                            if (displayHeight > maxHeight) {
-                                displayHeight = maxHeight;
-                                displayWidth = displayHeight * aspectRatio;
-                            }
-                            canvasContainer.style.width = displayWidth + 'px';
-                            canvasContainer.style.height = displayHeight + 'px';
-                        }
-                        
-                        // Resize logical canvas
-                        canvas.setWidth(newWidth);
-                        canvas.setHeight(newHeight);
-                    }
-                }
-                // --- End Step 1 ---
-
-                // --- Step 2: Clear Canvas and Set Background Color ---
-                
-                // **CRITICAL FIX:** Ensure the canvas is cleared first.
-                canvas.clear(); 
-                
-                if (template.data.backgroundColor) {
-                    // Set the background color directly (synchronous)
-                    canvas.backgroundColor = template.data.backgroundColor;
-                    // FIX: Update color picker to match BG
-                    bgColorPicker.value = template.data.backgroundColor;
-                }
-                
-                // --- Step 3: Load Objects ---
-                
-                // Fabric.js loads objects from JSON and then redraws
-                fabric.util.enlivenObjects(template.data.objects, function (objects) {
-                    // Clear the canvas one more time to be safe (just the objects layer)
-
-                    objects.forEach(function (obj) {
-                        if (obj.isButton) {
-                            // Recreate button logic
-                            const buttonRect = obj.item(0);
-                            const buttonText = obj.item(1);
-                            const newButton = createButton(
-                                buttonText.text, obj.left, obj.top, buttonRect.fill
-                            );
-                            newButton.scaleX = obj.scaleX;
-                            newButton.scaleY = obj.scaleY;
-                            newButton.angle = obj.angle;
-                            canvas.add(newButton);
-                        } else {
-                            canvas.add(obj);
-                        }
-                    });
-                    
-                    canvas.renderAll();
-                }, '');
             }
+            
+            // 1. Manually Pre-process Data to Fix CORS Taint
+            function preprocessObjects(objects) {
+                objects.forEach(obj => {
+                    // Target any image object with an external URL
+                    if (obj.type === 'image' && obj.src && obj.src.startsWith('http')) {
+                        // *** THIS IS THE CRITICAL LINE to prevent the SecurityError on Export ***
+                        obj.crossOrigin = 'anonymous'; 
+                    }
+                    // Check groups recursively (like your button group)
+                    if (obj.objects) {
+                        preprocessObjects(obj.objects);
+                    }
+                });
+            }
+
+            // Apply the fix to the main objects array
+            if (template.data && template.data.objects) {
+                preprocessObjects(template.data.objects);
+            }
+            
+            // 2. Handle Resizing (Kept from your original logic)
+            if (template.dimensions) {
+                const dims = template.dimensions.split('x');
+                const newWidth = parseInt(dims[0], 10);
+                const newHeight = parseInt(dims[1], 10);
+                
+                if (newWidth && newHeight) {
+                    CANVAS_WIDTH = newWidth;
+                    CANVAS_HEIGHT = newHeight;
+                    
+                    // Re-calculate container size based on new dimensions (your existing visual logic)
+                    const canvasContainer = document.getElementById('canvas-container');
+                    if (canvasContainer) {
+                        const maxWidth = 500; 
+                        const maxHeight = 600;
+                        const aspectRatio = newWidth / newHeight;
+                        let displayWidth = maxWidth;
+                        let displayHeight = displayWidth / aspectRatio;
+                        if (displayHeight > maxHeight) {
+                            displayHeight = maxHeight;
+                            displayWidth = displayHeight * aspectRatio;
+                        }
+                        canvasContainer.style.width = displayWidth + 'px';
+                        canvasContainer.style.height = displayHeight + 'px';
+                    }
+                    
+                    canvas.setWidth(newWidth);
+                    canvas.setHeight(newHeight);
+                }
+            }
+            
+            // 3. Clear Canvas and Set Background Color
+            canvas.clear(); 
+            if (template.data.backgroundColor) {
+                canvas.backgroundColor = template.data.backgroundColor;
+                bgColorPicker.value = template.data.backgroundColor;
+            }
+            
+            // 4. Load Objects using the stable loadFromJSON
+            canvas.loadFromJSON(template.data, function() {
+                
+                // Re-establish custom button properties after loading from JSON
+                canvas.getObjects().forEach(obj => {
+                    if (obj.type === 'group' && obj.objects.length === 2 && obj.item(0).type === 'rect' && obj.item(1).type === 'i-text') {
+                        // This logic is a guess based on your createButton function
+                        obj.isButton = true;
+                        obj.rect = obj.item(0); 
+                        obj.text = obj.item(1); 
+                        obj.text.isButtonText = true; // Re-establish text flag
+                    }
+                });
+
+                // Finalize rendering
+                canvas.calcOffset(); 
+                canvas.renderAll();
+                canvas.discardActiveObject();
+            });
+        }
 
             // --- NEW Layer Control Functions ---
             function moveLayer(direction) {
