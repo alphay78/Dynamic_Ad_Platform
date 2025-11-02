@@ -12,13 +12,12 @@ import {
 import { motion } from "framer-motion";
 
 // --- 1. Define Types for the Nested DB Structure ---
-
 interface TemplateVariant {
   id: string;
   name: string;
   dimensions: string;
   thumbnail: string;
-  data: any; 
+  data: any;
 }
 
 interface TemplateGroup {
@@ -38,24 +37,21 @@ declare global {
   }
 }
 
-// --- 2. Define a single, flat structure for the component state ---
+// --- 2. Flat structure for component state ---
 interface FlatTemplateData {
   id: string;
-  title: string; 
-  name: string; 
+  title: string;
+  name: string;
   thumbnail: string;
-  dimensions?: string; 
-  data: any; 
-  // Add required property for the render loop
-  date: string; 
+  dimensions?: string;
+  data: any;
+  date: string;
 }
 
 const SocialMediaPreset: React.FC = () => {
   const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [templates, setTemplates] = useState<FlatTemplateData[]>([]);
-
-// In SocialMediaPreset component:
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -64,23 +60,17 @@ const SocialMediaPreset: React.FC = () => {
     script.onload = () => {
       const db: TemplateDB = window.TEMPLATES_DB || {};
 
-      const flatTemplates: FlatTemplateData[] = Object.entries(db).flatMap(
-        ([groupId, group]) => {
-          return Object.values(group.variants).map(
-            (variant: TemplateVariant) => ({
-              // 🏆 CRITICAL FIX: Create a globally unique ID
-              id: `${groupId}-${variant.id}`, 
-              groupId: groupId, 
-              variantId: variant.id,
-              title: variant.name, 
-              name: variant.name, 
-              thumbnail: variant.thumbnail,
-              dimensions: variant.dimensions,
-              data: variant.data,
-              date: "Recently added", 
-            })
-          );
-        }
+      // ✅ Use the *group name* (e.g., “Tesfa Red”) as the display title
+      const flatTemplates: FlatTemplateData[] = Object.entries(db).map(
+        ([groupId, group]) => ({
+          id: groupId,
+          title: group.name,
+          name: group.name,
+          thumbnail: group.thumbnail,
+          dimensions: Object.values(group.variants)[0]?.dimensions || "N/A",
+          data: Object.values(group.variants)[0]?.data || {},
+          date: "Recently added",
+        })
       );
 
       setTemplates(flatTemplates);
@@ -88,13 +78,15 @@ const SocialMediaPreset: React.FC = () => {
 
     script.onerror = () => console.error("❌ Failed to load templates.js");
     document.body.appendChild(script);
-    
+
     return () => {
-        const scriptElement = document.querySelector(`script[src="/templates.js"]`);
-        if (scriptElement && document.body.contains(scriptElement)) {
-            document.body.removeChild(scriptElement);
-        }
-    }
+      const scriptElement = document.querySelector(
+        `script[src="/templates.js"]`
+      );
+      if (scriptElement && document.body.contains(scriptElement)) {
+        document.body.removeChild(scriptElement);
+      }
+    };
   }, []);
 
   const handleNext = () => {
@@ -104,25 +96,22 @@ const SocialMediaPreset: React.FC = () => {
     }
 
     if (selectedTemplate === "blank") {
-      navigate("/new-project/template-studio", {
+      navigate("/new-project/template-studio/blank", {
         state: { projectName: "Untitled Canvas", templateId: "blank" },
       });
     } else {
-      // FIX: Find the selected template data
       const selectedData = templates.find((tpl) => tpl.id === selectedTemplate);
-      
-      // FIX: Check if data was successfully found
+
       if (!selectedData) {
-          alert("Error: Template data not found.");
-          return;
+        alert("Error: Template data not found.");
+        return;
       }
 
       navigate("/new-project/template-studio", {
         state: {
-          // Use the correct property: selectedData.name or selectedData.title
-          projectName: selectedData.name || "Untitled Project", 
+          projectName: selectedData.name || "Untitled Project",
           templateId: selectedTemplate,
-          templateData: selectedData.data, 
+          templateData: selectedData.data,
         },
       });
     }
@@ -130,7 +119,7 @@ const SocialMediaPreset: React.FC = () => {
 
   return (
     <div className="h-screen flex font-sans text-gray-800 overflow-hidden relative">
-      {/* Sidebar (Omitted for brevity) */}
+      {/* Sidebar */}
       <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-emerald-600 to-emerald-400 flex flex-col p-6 text-white shadow-xl">
         <h1
           className="text-xl font-bold mb-10 tracking-wide cursor-pointer"
@@ -170,19 +159,14 @@ const SocialMediaPreset: React.FC = () => {
         </div>
       </aside>
 
-      {/* Background Motion Blobs (Omitted for brevity) */}
+      {/* Animated background */}
       <motion.div
         className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-emerald-200/50 rounded-full blur-3xl"
         animate={{ y: [0, 20, 0], opacity: [0.7, 1, 0.7] }}
         transition={{ duration: 10, repeat: Infinity }}
       />
-      <motion.div
-        className="absolute bottom-[-120px] left-[200px] w-[300px] h-[300px] bg-emerald-100/60 rounded-full blur-3xl"
-        animate={{ y: [0, -15, 0], opacity: [0.8, 1, 0.8] }}
-        transition={{ duration: 9, repeat: Infinity }}
-      />
 
-      {/* Main Content */}
+      {/* Main content */}
       <main className="flex-1 ml-64 overflow-y-auto p-12 bg-gradient-to-br from-white via-emerald-50 to-emerald-100 relative z-10">
         {/* Header */}
         <header className="flex justify-between items-center mb-12">
@@ -209,8 +193,9 @@ const SocialMediaPreset: React.FC = () => {
           </motion.button>
         </header>
 
-        {/* Create Blank Canvas (left-aligned, plus icon) */}
+        {/* Create Blank Canvas */}
         <motion.div
+          id="template-blank"
           onClick={() => setSelectedTemplate("blank")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
@@ -220,7 +205,6 @@ const SocialMediaPreset: React.FC = () => {
               : ""
           }`}
         >
-          {/* Plus Icon instead of image */}
           <motion.div
             animate={{ rotate: [0, 3, -3, 0] }}
             transition={{ duration: 4, repeat: Infinity }}
@@ -257,6 +241,7 @@ const SocialMediaPreset: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-20">
           {templates.map((template, i) => (
             <motion.div
+              id={`template-${template.id}`}
               key={template.id}
               onClick={() => setSelectedTemplate(template.id)}
               initial={{ opacity: 0, y: 20 }}
@@ -287,7 +272,6 @@ const SocialMediaPreset: React.FC = () => {
                   {template.title}
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  {/* Display the dimensions property */}
                   {template.dimensions}
                 </p>
               </div>
@@ -298,6 +282,7 @@ const SocialMediaPreset: React.FC = () => {
         {/* Next Button */}
         <div className="text-right mt-12 pb-10">
           <motion.button
+            id="btn-generate"
             onClick={handleNext}
             whileHover={{ scale: 1.07 }}
             whileTap={{ scale: 0.96 }}
