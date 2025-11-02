@@ -10,6 +10,12 @@ import {
   PlusCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  FaTelegramPlane,
+  FaInstagram,
+  FaFacebook,
+  FaLinkedin,
+} from "react-icons/fa";
 
 // --- 1. Define Types for the Nested DB Structure ---
 interface TemplateVariant {
@@ -125,7 +131,7 @@ const SocialMediaPreset: React.FC = () => {
           className="text-xl font-bold mb-10 tracking-wide cursor-pointer"
           onClick={() => navigate("/dashboard")}
         >
-          Gospel Ad
+          FaithFlow Studio
         </h1>
 
         <nav className="space-y-3 flex-1">
@@ -254,6 +260,7 @@ const SocialMediaPreset: React.FC = () => {
                   : "border-transparent hover:shadow-lg hover:-translate-y-1"
               }`}
             >
+              {/* Thumbnail */}
               <div className="h-40 w-full overflow-hidden relative group">
                 <motion.img
                   src={template.thumbnail}
@@ -261,19 +268,30 @@ const SocialMediaPreset: React.FC = () => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 {selectedTemplate === template.id && (
-                  <div className="absolute inset-0 bg-emerald-600/50 flex items-center justify-center text-white">
+                  <div className="absolute inset-0 bg-emerald-600/50 flex items-center justify-center text-green">
                     <CheckCircle size={28} />
                   </div>
                 )}
               </div>
 
-              <div className="p-4">
+              {/* Info Section */}
+              <div className="p-4 ">
                 <h3 className="text-md font-semibold text-gray-800 truncate">
                   {template.title}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  {template.dimensions}
-                </p>
+
+                {/* ✅ New: Suitable for section */}
+                <div className="mt-2 flex items-center justify-between">
+                  <p className="text-xs text-gray-500 font-medium">
+                    Suitable for
+                  </p>
+                  <div className="flex items-center gap-2 text-emerald-600 text-xl">
+                    <FaTelegramPlane className="hover:text-emerald-700 transition-colors" />
+                    <FaInstagram className="hover:text-emerald-700 transition-colors" />
+                    <FaFacebook className="hover:text-emerald-700 transition-colors" />
+                    <FaLinkedin className="hover:text-emerald-700 transition-colors" />
+                  </div>
+                </div>
               </div>
             </motion.div>
           ))}
