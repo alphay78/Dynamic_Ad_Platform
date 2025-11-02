@@ -165,6 +165,13 @@
                 </div>
             </main>
 
+            <aside id="variants-sidebar" class="w-60 bg-white p-4 overflow-y-auto shadow-lg space-y-4">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Template Variants</h2>
+                <div id="variants-list" class="space-y-3">
+                    <p class="text-sm text-gray-500 italic" id="variants-placeholder">No template loaded.</p>
+                </div>
+            </aside>
+
         </div>
     </div>
 
@@ -181,13 +188,18 @@
                 selection: true,
                 controlsAboveOverlay: true
             });
+
+           // fabric.Object.ownProperties.push('name', 'isButton', 'isButtonText', 'isButtonRect');
             
             // --- Constants ---
             let CANVAS_WIDTH = 1080;
             let CANVAS_HEIGHT = 1080;
             const FONT_OPTIONS = ['Inter', 'Roboto', 'Poppins', 'Arial', 'Verdana', 'Georgia'];
             let currentZoom = 0.64; // Default zoom
-            let logoObject = null; // Used by initial template
+           // let logoObject = null; // Used by initial template
+
+            let loadedTemplateGroupId = null;
+            let currentTemplateVariants = null;
             
             // --- Get all the HTML elements ---
             const bgColorPicker = document.getElementById('bg-color-picker');
@@ -418,21 +430,21 @@
              * Loads the initial Gospel template elements.
              */
             function addInitialElements() {
-                // 1. Logo (Image)
-                const initialLogoUrl = 'https://placehold.co/150x150/6d28d9/ffffff?text=MINISTRY';
-                fabric.Image.fromURL(initialLogoUrl, function(img) {
-                    logoObject = img;
-                    logoObject.set({
-                        left: 90, top: 90,
-                        scaleX: 150 / img.width, scaleY: 150 / img.height,
-                        lockUniScaling: true, name: 'logo',
-                        clipPath: new fabric.Circle({ 
-                            radius: 75, left: -75, top: -75,
-                        })
-                    });
-                    canvas.add(logoObject);
-                    canvas.renderAll();
-                }, { crossOrigin: 'anonymous' });
+                // // 1. Logo (Image)
+                // const initialLogoUrl = 'https://placehold.co/150x150/6d28d9/ffffff?text=MINISTRY';
+                // fabric.Image.fromURL(initialLogoUrl, function(img) {
+                //     logoObject = img;
+                //     logoObject.set({
+                //         left: 90, top: 90,
+                //         scaleX: 150 / img.width, scaleY: 150 / img.height,
+                //         lockUniScaling: true, name: 'logo',
+                //         clipPath: new fabric.Circle({ 
+                //             radius: 75, left: -75, top: -75,
+                //         })
+                //     });
+                //     canvas.add(logoObject);
+                //     canvas.renderAll();
+                // }, { crossOrigin: 'anonymous' });
 
                 // 2. Title Text
                 const title = new fabric.Textbox('Find Hope, Joy, & New Life', {
@@ -547,9 +559,14 @@
                 canvas.discardActiveObject().renderAll();
             });
             
-            // Export as PNG
-            exportPngBtn.addEventListener('click', () => {
+            // Export as PNG (MODIFIED FOR BATCH EXPORT)
+                    // WITH THIS: (Always call single export based on the current canvas state)
+            exportPngBtn.addEventListener('click', singleExportPng);
+
+            // NEW: Single Export Function (Existing logic moved here)
+            function singleExportPng() {
                 try {
+                    // ... (keep the original single export logic here) ...
                     canvas.discardActiveObject();
                     canvas.renderAll();
                     
@@ -561,7 +578,6 @@
                     const link = document.createElement('a');
                     link.href = dataURL;
                     
-                    // NEW: Use canvas dimensions for filename
                     const safeWidth = canvas.getWidth() || 1080;
                     const safeHeight = canvas.getHeight() || 1080;
                     link.download = `my-ad-design-${safeWidth}x${safeHeight}.png`;
@@ -569,12 +585,70 @@
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                } catch (err)
- {
+                    alert(`Single export finished: ${link.download}`);
+
+                } catch (err) {
                     console.error('Export failed:', err);
                     alert('Export failed.');
                 }
-            });
+            }
+            
+            // NEW: Batch Export Function (Must be async)
+            async function batchExportGroup(groupId) { 
+                const group = window.TEMPLATES_DB[groupId];
+                if (!group || !group.variants) {
+                    alert('Could not find template group for batch export.');
+                    return;
+                }
+                
+                let exportCount = 0;
+                const variantIds = Object.keys(group.variants);
+                
+                // Disable the export button to prevent multiple clicks
+                exportPngBtn.disabled = true;
+                exportPngBtn.textContent = `Exporting (0/${variantIds.length})...`;
+                
+                // Use a loop that waits for each load to complete
+                for (let i = 0; i < variantIds.length; i++) {
+                    const variantId = variantIds[i];
+                    const variant = group.variants[variantId];
+
+                    try {
+                        // AWAIT the template to fully load and render (Images included)
+                        await loadTemplate(variant);
+                        
+                        // Update UI feedback
+                        exportPngBtn.textContent = `Exporting (${i + 1}/${variantIds.length})...`;
+
+                        // Canvas is guaranteed to be ready here
+                        canvas.discardActiveObject();
+                        canvas.renderAll();
+
+                        const dataURL = canvas.toDataURL({ format: 'png', quality: 1.0 });
+                        const link = document.createElement('a');
+                        link.href = dataURL;
+                        
+                        const safeWidth = canvas.getWidth() || 1080;
+                        const safeHeight = canvas.getHeight() || 1080;
+                        const templateName = variant.name.replace(/\s+/g, '_');
+                        
+                        link.download = `${templateName}-${safeWidth}x${safeHeight}.png`;
+                        
+                        // Trigger download
+                        link.click(); 
+                        
+                        exportCount++;
+
+                    } catch (e) {
+                        console.error(`Export failed for variant ${variant.name}:`, e);
+                    }
+                }
+                
+                // Re-enable the button and alert success
+                exportPngBtn.disabled = false;
+                exportPngBtn.textContent = 'Export as PNG';
+                alert(`Batch export finished! Exported ${exportCount} variant(s) from the '${group.name}' group.`);
+            }
 
 
             // --- Template Functions (from File 2) ---
@@ -746,6 +820,79 @@
                 canvas.renderAll();
             }
 
+function populateVariantsSidebar(groupId, variants) {
+    const variantsList = document.getElementById('variants-list');
+    const variantsPlaceholder = document.getElementById('variants-placeholder');
+    
+    if (variantsPlaceholder) variantsPlaceholder.remove();
+    
+    // Clear existing buttons
+    variantsList.innerHTML = '';
+    
+    for (const variantId in variants) {
+        if (variants.hasOwnProperty(variantId)) {
+            const variantData = variants[variantId];
+            
+            // Container for the variant controls
+            const container = document.createElement('div');
+            container.className = 'p-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm space-y-2';
+
+            const nameText = document.createElement('p');
+            nameText.className = 'font-semibold text-gray-700 text-sm';
+            nameText.textContent = `${variantData.name} (${variantData.dimensions})`;
+            container.appendChild(nameText);
+
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'flex gap-2';
+            
+            // 1. Load Button
+            const loadButton = document.createElement('button');
+            loadButton.className = 'flex-1 text-xs bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600 transition';
+            loadButton.textContent = '🎨 Load';
+            loadButton.addEventListener('click', async () => {
+                await loadTemplate(variantData);
+                updateZoom(64); // Reset zoom after loading new dimensions
+                alert(`Template '${variantData.name}' loaded! Click Export to save.`);
+            });
+
+            // 2. Export Button (Single-Click Export from Sidebar)
+            const exportVariantButton = document.createElement('button');
+            exportVariantButton.className = 'flex-1 text-xs bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-600 transition';
+            exportVariantButton.textContent = '💾 Export';
+            
+            // This button loads the variant, then immediately exports it, fulfilling the one-by-one export request.
+            exportVariantButton.addEventListener('click', async () => {
+                // Temporarily disable buttons to prevent rapid clicks
+                exportVariantButton.disabled = true;
+                exportVariantButton.textContent = 'Exporting...';
+
+                try {
+                    // Load the template asynchronously (must wait)
+                    await loadTemplate(variantData);
+                    
+                    // Call the single export logic immediately after loading
+                    singleExportPng(); 
+                    alert(`Exported: ${variantData.name} (${variantData.dimensions})`);
+
+                } catch (e) {
+                    console.error('Export Failed:', e);
+                    alert(`Failed to export ${variantData.name}.`);
+                } finally {
+                    exportVariantButton.disabled = false;
+                    exportVariantButton.textContent = '💾 Export';
+                    // Re-render the canvas to show the loaded state after export
+                    canvas.renderAll(); 
+                }
+            });
+
+            buttonGroup.appendChild(loadButton);
+            buttonGroup.appendChild(exportVariantButton);
+            container.appendChild(buttonGroup);
+            variantsList.appendChild(container);
+        }
+    }
+}
+
             // --- 2. START OF CORRECTED FINAL BLOCK ---
             
             // Populate Font Dropdown
@@ -825,21 +972,22 @@
                 console.log('All objects unlocked');
             });
 
-            // --- NEW: Load Initial State ---
+           // --- NEW: Load Initial State (MODIFIED) ---
             (function autoLoadFromQuery() {
                 try {
                     const params = new URLSearchParams(window.location.search);
                     const tid = params.get('templateId');
                     
-                    // --- Logic Branch 1: NO templateId in URL ---
+                    // 1. CRITICAL FIX: Register custom properties here, where the DOM and canvas 
+                    // are initialized, but before any template loading begins.
+                   // fabric.Object.ownProperties.push('name', 'isButton', 'isButtonText', 'isButtonRect'); 
+
                     if (!tid) {
-                        console.log('[Editor] No templateId, loading default.');
-                        addInitialElements(); // This is the correct fallback
+                        addInitialElements(); 
                         updateZoom(64);
                         return;
                     }
 
-                    // --- Logic Branch 2: templateId IS in URL ---
                     let templateVariant = null;
                     const db = window.TEMPLATES_DB || window.TEMPLATES; 
                     
@@ -848,61 +996,50 @@
                             const group = db[groupId];
                             if (group.variants && group.variants[tid]) {
                                 templateVariant = group.variants[tid]; 
+                                // **CRITICAL: Save Group ID and Variants**
+                                loadedTemplateGroupId = groupId;
+                                currentTemplateVariants = group.variants;
                                 break; 
                             }
                         }
                     }
 
-                    // --- Found the template! ---
                     if (templateVariant) {
-                        console.log('[Editor] Found template:', tid, templateVariant.name);
-                        
                         const dims = templateVariant.dimensions.split('x');
                         const newWidth = parseInt(dims[0], 10);
                         const newHeight = parseInt(dims[1], 10);
 
                         if (!newWidth || !newHeight) {
                              console.error('Invalid template dimensions:', templateVariant.dimensions);
-                             addInitialElements(); // Fallback to default
+                             addInitialElements(); 
                              updateZoom(64);
                              return;
                         }
 
+                        // Set canvas dimensions
                         CANVAS_WIDTH = newWidth;
                         CANVAS_HEIGHT = newHeight;
+                        
+                        // Load the template (synchronous due to Promise)
+                        loadTemplate(templateVariant).then(() => {
+                            // After loading, populate the right sidebar
+                            populateVariantsSidebar(loadedTemplateGroupId, currentTemplateVariants);
+                            updateZoom(64);
+                        }).catch(err => {
+                             console.error('Error loading template:', err);
+                             addInitialElements(); 
+                             updateZoom(64);
+                        });
 
-                        // Resize the VISUAL container
-                        const canvasContainer = document.getElementById('canvas-container');
-                        if (canvasContainer) {
-                            const maxWidth = 500; 
-                            const maxHeight = 600;
-                            const aspectRatio = newWidth / newHeight;
-                            let displayWidth = maxWidth;
-                            let displayHeight = displayWidth / aspectRatio;
-                            if (displayHeight > maxHeight) {
-                                displayHeight = maxHeight;
-                                displayWidth = displayHeight * aspectRatio;
-                            }
-                            canvasContainer.style.width = displayWidth + 'px';
-                            canvasContainer.style.height = displayHeight + 'px';
-                        }
+                        return;
 
-                        // Resize the LOGICAL canvas
-                        canvas.setWidth(newWidth);
-                        canvas.setHeight(newHeight);
-                        loadTemplate(templateVariant); // Load the template
-                        updateZoom(64);
-
-                    } 
-                    // --- Logic Branch 3: templateId was given but NOT FOUND ---
-                    else {
+                    } else {
                         console.warn('Could not find template data for ID:', tid);
-                        // Show a blank canvas, but still set the zoom
                         updateZoom(64);
                     }
                 } catch (err) {
                     console.warn('Failed to auto-load template from query:', err);
-                    addInitialElements(); // Load default on any *other* error
+                    addInitialElements(); 
                     updateZoom(64);
                 }
             })();

@@ -59,7 +59,7 @@ const TemplateStudio: React.FC = () => {
   return (
     <div className="h-screen w-screen grid grid-cols-4 bg-gray-50 text-gray-900 font-sans overflow-hidden">
       {/* --- MAIN CENTER (Editor) --- */}
-      <div className="col-span-3 h-full">
+      <div className="col-span-4 h-full">
         <iframe
           src={`/editor.html?templateId=${selectedTemplate?.variantId || ""}`}
           title="Ad Editor"
@@ -73,7 +73,8 @@ const TemplateStudio: React.FC = () => {
       </div>
 
       {/* --- RIGHT SIDEBAR --- */}
-      <aside className="col-span-1 h-full flex flex-col bg-white border-l p-4 overflow-y-auto">
+
+{/*       <aside className="col-span-1 h-full flex flex-col bg-white border-l p-4 overflow-y-auto">
         <div className="text-lg font-semibold mb-4">Template Variations</div>
 
         {templateVariations.length === 0 ? (
@@ -138,7 +139,7 @@ const TemplateStudio: React.FC = () => {
             </button>
           </div>
         )}
-      </aside>
+      </aside> */}
     </div>
   );
 };
