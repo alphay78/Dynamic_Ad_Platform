@@ -6,49 +6,33 @@
     <title>Ad Generator (Merged)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="templates.js"></script>
+    
+    <script src="templates.js"></script> 
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-
-        /* This section is for the new visual zoom from File 2.
-         It scales the container, not the canvas.
-        */
         .canvas-wrapper {
             position: relative;
             width: 100%;
-            height: 600px; /* Give the wrapper a fixed height */
+            height: 600px; 
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden; /* Hide parts of the canvas that are zoomed in */
+            overflow: hidden;
         }
         
         #canvas-container {
-            /* This is the container that will be scaled */
-            width: 500px; /* Visual size on page */
-            height: 500px; /* Visual size on page */
+            width: 500px; /* Default visual size */
+            height: 500px; /* Default visual size */
             transform-origin: center center;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, width 0.2s ease, height 0.2s ease;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
             border: 1px solid #e5e7eb;
         }
-
-        /* Styles for the Template Modal (from File 1) */
-        #template-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); display: flex;
-            align-items: center; justify-content: center; z-index: 50;
-        }
-        #template-modal {
-            background-color: white; border-radius: 8px; width: 90%;
-            max-width: 60rem; max-height: 90vh; overflow-y: auto;
-        }
-
-        /* Refined color input style from File 2 */
         input[type="color"] {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
             border: 1px solid #d1d5db; width: 100%; height: 40px;
@@ -484,9 +468,7 @@
                 canvas.renderAll();
             });
 
-            // Add Image from File (Replaces BG Image & Logo)
-            // THIS IS THE NEW LOGIC - adds as a normal, selectable layer
-// Add Image from File (UPDATED)
+            // Add Image from File (UPDATED)
             addImageInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -496,7 +478,6 @@
                     const data = f.target.result;
                     fabric.Image.fromURL(data, (img) => {
                         
-                        // NEW: Scale image to fill canvas (like a background)
                         const canvasWidth = canvas.getWidth();
                         const canvasHeight = canvas.getHeight();
                         const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
@@ -511,11 +492,10 @@
                             selectable: true, 
                             evented: true
                         });
-                        // END NEW
                         
                         canvas.add(img);
-                        img.sendToBack(); // <-- FIX: Send it to the back
-                        canvas.discardActiveObject(); // <-- FIX: Deselect it
+                        img.sendToBack(); 
+                        canvas.discardActiveObject();
                         canvas.renderAll();
                     });
                 };
@@ -523,7 +503,7 @@
                 e.target.value = null; // Clear input
             });
             
-// Add Image from URL (UPDATED)
+            // Add Image from URL (UPDATED)
             function addImageFromUrl() {
                 const url = imageUrlInput.value;
                 if (!url) {
@@ -533,7 +513,6 @@
                 
                 fabric.Image.fromURL(url, function(img) {
                     
-                    // NEW: Scale image to fill canvas (like a background)
                     const canvasWidth = canvas.getWidth();
                     const canvasHeight = canvas.getHeight();
                     const scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
@@ -548,11 +527,10 @@
                         selectable: true, 
                         evented: true
                     });
-                    // END NEW
                     
                     canvas.add(img);
-                    img.sendToBack(); // <-- FIX: Send it to the back
-                    canvas.discardActiveObject(); // <-- FIX: Deselect it
+                    img.sendToBack(); 
+                    canvas.discardActiveObject(); 
                     canvas.renderAll();
                     imageUrlInput.value = ''; // Clear input
                 }, { crossOrigin: 'anonymous', onerror: (err) => {
@@ -578,15 +556,21 @@
                     const dataURL = canvas.toDataURL({
                         format: 'png',
                         quality: 1.0,
-                        multiplier: 1 // Export at 1080x1080
+                        multiplier: 1
                     });
                     const link = document.createElement('a');
                     link.href = dataURL;
-                    link.download = 'my-ad-design-1080.png';
+                    
+                    // NEW: Use canvas dimensions for filename
+                    const safeWidth = canvas.getWidth() || 1080;
+                    const safeHeight = canvas.getHeight() || 1080;
+                    link.download = `my-ad-design-${safeWidth}x${safeHeight}.png`;
+                    
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                } catch (err) {
+                } catch (err)
+ {
                     console.error('Export failed:', err);
                     alert('Export failed.');
                 }
@@ -599,10 +583,13 @@
                 const templateName = prompt("Enter a name for this template:", "My Gospel Template");
                 if (!templateName) return;
                 
+                // Save custom properties
                 const canvasData = canvas.toObject(['name', 'isButton', 'isButtonText', 'isButtonRect']);
                 
                 const template = {
                     name: templateName,
+                    // NEW: Save dimensions with the template
+                    dimensions: `${canvas.getWidth()}x${canvas.getHeight()}`, 
                     data: {
                         version: "5.3.0",
                         backgroundColor: canvas.backgroundColor,
@@ -635,6 +622,7 @@
                 reader.onload = function(event) {
                     try {
                         const template = JSON.parse(event.target.result);
+                        // NEW: Pass the *whole* template object
                         loadTemplate(template);
                     } catch (error) {
                         console.error("Error parsing template:", error);
@@ -645,49 +633,87 @@
                 e.target.value = '';
             });
 
+ // UPDATED to handle resizing from imported .json
             function loadTemplate(template) {
                 if (!template || !template.data) {
-                    alert("Invalid template format.");
-                    return;
+                    // Check for older format (just the data)
+                    if (template.objects) {
+                        template = { data: template, name: 'Imported' };
+                    } else {
+                        alert("Invalid template format.");
+                        return;
+                    }
                 }
                 
-                canvas.clear();
+                // --- Step 1: Handle Resizing (Must happen before loading objects) ---
+                if (template.dimensions) {
+                    const dims = template.dimensions.split('x');
+                    const newWidth = parseInt(dims[0], 10);
+                    const newHeight = parseInt(dims[1], 10);
+                    
+                    if (newWidth && newHeight) {
+                        CANVAS_WIDTH = newWidth;
+                        CANVAS_HEIGHT = newHeight;
+                        
+                        // Resize visual container (omitted here for brevity, assume it's fixed elsewhere)
+                        const canvasContainer = document.getElementById('canvas-container');
+                        if (canvasContainer) {
+                            const maxWidth = 500;
+                            const maxHeight = 600;
+                            const aspectRatio = newWidth / newHeight;
+                            let displayWidth = maxWidth;
+                            let displayHeight = displayWidth / aspectRatio;
+                            if (displayHeight > maxHeight) {
+                                displayHeight = maxHeight;
+                                displayWidth = displayHeight * aspectRatio;
+                            }
+                            canvasContainer.style.width = displayWidth + 'px';
+                            canvasContainer.style.height = displayHeight + 'px';
+                        }
+                        
+                        // Resize logical canvas
+                        canvas.setWidth(newWidth);
+                        canvas.setHeight(newHeight);
+                    }
+                }
+                // --- End Step 1 ---
+
+                // --- Step 2: Clear Canvas and Set Background Color ---
+                
+                // **CRITICAL FIX:** Ensure the canvas is cleared first.
+                canvas.clear(); 
                 
                 if (template.data.backgroundColor) {
-                    canvas.setBackgroundColor(template.data.backgroundColor, canvas.renderAll.bind(canvas));
+                    // Set the background color directly (synchronous)
+                    canvas.backgroundColor = template.data.backgroundColor;
+                    // FIX: Update color picker to match BG
+                    bgColorPicker.value = template.data.backgroundColor;
                 }
                 
-                // This is the key: we need to re-create the button groups
-                // because `loadFromJSON` doesn't handle custom properties/methods.
+                // --- Step 3: Load Objects ---
+                
+                // Fabric.js loads objects from JSON and then redraws
                 fabric.util.enlivenObjects(template.data.objects, function (objects) {
-                    canvas.clear(); // Clear again just in case
+                    // Clear the canvas one more time to be safe (just the objects layer)
+
                     objects.forEach(function (obj) {
                         if (obj.isButton) {
-                            // Re-create the button to attach logic
+                            // Recreate button logic
                             const buttonRect = obj.item(0);
                             const buttonText = obj.item(1);
-                            
                             const newButton = createButton(
-                                buttonText.text,
-                                obj.left,
-                                obj.top,
-                                buttonRect.fill
+                                buttonText.text, obj.left, obj.top, buttonRect.fill
                             );
-                            
-                            // Apply scaling and other properties
                             newButton.scaleX = obj.scaleX;
                             newButton.scaleY = obj.scaleY;
                             newButton.angle = obj.angle;
-                            
                             canvas.add(newButton);
                         } else {
-                            // Add all other objects normally
                             canvas.add(obj);
                         }
                     });
                     
                     canvas.renderAll();
-                    alert(`Template "${template.name}" loaded!`);
                 }, '');
             }
 
@@ -713,7 +739,7 @@
                 canvas.renderAll();
             }
 
-            // --- Initial Setup & Event Listeners ---
+            // --- 2. START OF CORRECTED FINAL BLOCK ---
             
             // Populate Font Dropdown
             FONT_OPTIONS.forEach(font => {
@@ -761,13 +787,7 @@
             moveForwardBtn.addEventListener('click', () => moveLayer('forward'));
             sendBackwardBtn.addEventListener('click', () => moveLayer('backward'));
             
-            // Zoom listeners
-            zoomSlider.addEventListener('input', (e) => updateZoom(e.target.value));
-            zoomInBtn.addEventListener('click', zoomIn);
-            zoomOutBtn.addEventListener('click', zoomOut);
-            zoomResetBtn.addEventListener('click', resetZoom);
-
-            // Zoom listeners
+            // Zoom listeners (Only one block)
             zoomSlider.addEventListener('input', (e) => updateZoom(e.target.value));
             zoomInBtn.addEventListener('click', zoomIn);
             zoomOutBtn.addEventListener('click', zoomOut);
@@ -777,20 +797,17 @@
             lockSelectedBtn.addEventListener('click', () => {
                 const obj = canvas.getActiveObject();
                 if (obj) {
-                    // Lock the object by making it unselectable
                     obj.set({
                         selectable: false,
-                        evented: false, // 'evented: false' stops it from being clicked
+                        evented: false, 
                     });
-                    canvas.discardActiveObject(); // Deselect it
+                    canvas.discardActiveObject(); 
                     canvas.renderAll();
                     console.log('Object locked');
                 }
             });
 
             unlockAllBtn.addEventListener('click', () => {
-                // We must unlock ALL objects, since a locked object
-                // cannot be selected to be unlocked individually.
                 canvas.getObjects().forEach(obj => {
                     obj.set({
                         selectable: true,
@@ -801,45 +818,88 @@
                 console.log('All objects unlocked');
             });
 
-            // --- Load Initial State ---
-            addInitialElements(); // Load the default Gospel template
-            updateZoom(64); // Set default zoom
-
+            // --- NEW: Load Initial State ---
             (function autoLoadFromQuery() {
                 try {
                     const params = new URLSearchParams(window.location.search);
                     const tid = params.get('templateId');
-                    if (!tid) return;
+                    
+                    // --- Logic Branch 1: NO templateId in URL ---
+                    if (!tid) {
+                        console.log('[Editor] No templateId, loading default.');
+                        addInitialElements(); // This is the correct fallback
+                        updateZoom(64);
+                        return;
+                    }
 
-                    // NEW: Find the template data in the nested TEMPLATES_DB
-                    let templateData = null;
-                    if (window.TEMPLATES_DB) {
-                        // Loop through each group (e.g., "group_modern_dark")
-                        for (const groupId in window.TEMPLATES_DB) {
-                            const group = window.TEMPLATES_DB[groupId];
-                            // Check if the variant ID exists in this group
+                    // --- Logic Branch 2: templateId IS in URL ---
+                    let templateVariant = null;
+                    const db = window.TEMPLATES_DB || window.TEMPLATES; 
+                    
+                    if (db) {
+                        for (const groupId in db) {
+                            const group = db[groupId];
                             if (group.variants && group.variants[tid]) {
-                                templateData = group.variants[tid].data;
-                                break; // Found it!
+                                templateVariant = group.variants[tid]; 
+                                break; 
                             }
                         }
                     }
 
-                    if (templateData) {
-                        console.log('[editor] autoLoadFromQuery, templateId=', tid);
-                        // Use the same universal loader from your editor
-                        universalTemplateLoader(templateData);
-                        // Ensure the modal is closed
-                        closeModal();
-                    } else {
+                    // --- Found the template! ---
+                    if (templateVariant) {
+                        console.log('[Editor] Found template:', tid, templateVariant.name);
+                        
+                        const dims = templateVariant.dimensions.split('x');
+                        const newWidth = parseInt(dims[0], 10);
+                        const newHeight = parseInt(dims[1], 10);
+
+                        if (!newWidth || !newHeight) {
+                             console.error('Invalid template dimensions:', templateVariant.dimensions);
+                             addInitialElements(); // Fallback to default
+                             updateZoom(64);
+                             return;
+                        }
+
+                        CANVAS_WIDTH = newWidth;
+                        CANVAS_HEIGHT = newHeight;
+
+                        // Resize the VISUAL container
+                        const canvasContainer = document.getElementById('canvas-container');
+                        if (canvasContainer) {
+                            const maxWidth = 500; 
+                            const maxHeight = 600;
+                            const aspectRatio = newWidth / newHeight;
+                            let displayWidth = maxWidth;
+                            let displayHeight = displayWidth / aspectRatio;
+                            if (displayHeight > maxHeight) {
+                                displayHeight = maxHeight;
+                                displayWidth = displayHeight * aspectRatio;
+                            }
+                            canvasContainer.style.width = displayWidth + 'px';
+                            canvasContainer.style.height = displayHeight + 'px';
+                        }
+
+                        // Resize the LOGICAL canvas
+                        canvas.setWidth(newWidth);
+                        canvas.setHeight(newHeight);
+                        loadTemplate(templateVariant); // Load the template
+                        updateZoom(64);
+
+                    } 
+                    // --- Logic Branch 3: templateId was given but NOT FOUND ---
+                    else {
                         console.warn('Could not find template data for ID:', tid);
+                        // Show a blank canvas, but still set the zoom
+                        updateZoom(64);
                     }
                 } catch (err) {
                     console.warn('Failed to auto-load template from query:', err);
+                    addInitialElements(); // Load default on any *other* error
+                    updateZoom(64);
                 }
             })();
-
-        
+            // --- END OF CORRECTED FINAL BLOCK ---
 
         });
     </script>

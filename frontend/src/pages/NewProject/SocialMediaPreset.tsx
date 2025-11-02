@@ -11,28 +11,84 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+// --- 1. Define Types for the Nested DB Structure ---
+
+interface TemplateVariant {
+  id: string;
+  name: string;
+  dimensions: string;
+  thumbnail: string;
+  data: any; 
+}
+
+interface TemplateGroup {
+  id: string;
+  name: string;
+  thumbnail: string;
+  variants: { [key: string]: TemplateVariant };
+}
+
+export interface TemplateDB {
+  [groupId: string]: TemplateGroup;
+}
+
 declare global {
   interface Window {
-    TEMPLATES_DB: any;
+    TEMPLATES_DB: TemplateDB;
   }
+}
+
+// --- 2. Define a single, flat structure for the component state ---
+interface FlatTemplateData {
+  id: string;
+  title: string; 
+  name: string; 
+  thumbnail: string;
+  dimensions?: string; 
+  data: any; 
+  // Add required property for the render loop
+  date: string; 
 }
 
 const SocialMediaPreset: React.FC = () => {
   const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<FlatTemplateData[]>([]);
 
   useEffect(() => {
-    if (window.TEMPLATES_DB && window.TEMPLATES_DB["square"]) {
-      const dbTemplates = window.TEMPLATES_DB["square"].templates.map(
-        (tpl: any) => ({
-          id: tpl.id,
-          title: tpl.name,
-          thumbnail: tpl.thumbnail,
-          date: "Recently added",
-        })
-      );
-      setTemplates(dbTemplates);
+    const script = document.createElement("script");
+    script.src = "/templates.js";
+
+    script.onload = () => {
+      const db: TemplateDB = window.TEMPLATES_DB || {};
+
+      const groups = Object.values(db) as TemplateGroup[];
+
+      const flatTemplates: FlatTemplateData[] = groups.flatMap(group => {
+        return Object.values(group.variants).map((variant: TemplateVariant) => ({
+          id: variant.id,
+          // FIX: The component uses 'title' and 'name' interchangeably; set both to variant.name
+          title: variant.name, 
+          name: variant.name, 
+          thumbnail: variant.thumbnail,
+          dimensions: variant.dimensions,
+          data: variant.data,
+          // FIX: Add the expected 'date' property
+          date: "Recently added", 
+        }));
+      });
+
+      setTemplates(flatTemplates);
+    };
+
+    script.onerror = () => console.error("❌ Failed to load templates.js");
+    document.body.appendChild(script);
+    
+    return () => {
+        const scriptElement = document.querySelector(`script[src="/templates.js"]`);
+        if (scriptElement && document.body.contains(scriptElement)) {
+            document.body.removeChild(scriptElement);
+        }
     }
   }, []);
 
@@ -47,12 +103,21 @@ const SocialMediaPreset: React.FC = () => {
         state: { projectName: "Untitled Canvas", templateId: "blank" },
       });
     } else {
+      // FIX: Find the selected template data
       const selectedData = templates.find((tpl) => tpl.id === selectedTemplate);
+      
+      // FIX: Check if data was successfully found
+      if (!selectedData) {
+          alert("Error: Template data not found.");
+          return;
+      }
+
       navigate("/new-project/template-studio", {
         state: {
-          projectName: selectedData?.title || "Untitled Project",
+          // Use the correct property: selectedData.name or selectedData.title
+          projectName: selectedData.name || "Untitled Project", 
           templateId: selectedTemplate,
-          templateData: selectedData,
+          templateData: selectedData.data, 
         },
       });
     }
@@ -60,7 +125,7 @@ const SocialMediaPreset: React.FC = () => {
 
   return (
     <div className="h-screen flex font-sans text-gray-800 overflow-hidden relative">
-      {/* Sidebar */}
+      {/* Sidebar (Omitted for brevity) */}
       <aside className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-emerald-600 to-emerald-400 flex flex-col p-6 text-white shadow-xl">
         <h1
           className="text-xl font-bold mb-10 tracking-wide cursor-pointer"
@@ -100,7 +165,7 @@ const SocialMediaPreset: React.FC = () => {
         </div>
       </aside>
 
-      {/* Background Motion Blobs */}
+      {/* Background Motion Blobs (Omitted for brevity) */}
       <motion.div
         className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] bg-emerald-200/50 rounded-full blur-3xl"
         animate={{ y: [0, 20, 0], opacity: [0.7, 1, 0.7] }}
@@ -202,7 +267,7 @@ const SocialMediaPreset: React.FC = () => {
               <div className="h-40 w-full overflow-hidden relative group">
                 <motion.img
                   src={template.thumbnail}
-                  alt={template.title}
+                  alt={template.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 {selectedTemplate === template.id && (
@@ -216,7 +281,10 @@ const SocialMediaPreset: React.FC = () => {
                 <h3 className="text-md font-semibold text-gray-800 truncate">
                   {template.title}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">{template.date}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {/* Display the dimensions property */}
+                  {template.dimensions}
+                </p>
               </div>
             </motion.div>
           ))}
