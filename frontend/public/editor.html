@@ -181,6 +181,9 @@
         window.addEventListener('load', () => {
             
             // --- Initialize Canvas ---
+
+            //fabric.Object.ownProperties.push('name', 'isButton', 'isButtonText', 'isButtonRect');
+
             const canvas = new fabric.Canvas('my-canvas', {
                 width: 1080,
                 height: 1080,
@@ -706,95 +709,95 @@
                 reader.readAsText(file);
                 e.target.value = '';
             });
-
-        // UPDATED to handle resizing from imported .json
-                // UPDATED to handle resizing and explicitly fix CORS
+       // 🥇 CRITICAL FIX: LoadTemplate must be PROMISE-BASED to work with AWAIT
         function loadTemplate(template) {
-            if (!template || !template.data) {
-                if (template.objects) {
-                    template = { data: template, name: 'Imported' };
-                } else {
-                    alert("Invalid template format.");
-                    return;
+            return new Promise((resolve, reject) => { // <-- NEW: RETURN PROMISE
+                if (!template || !template.data) {
+                    if (template.objects) {
+                        template = { data: template, name: 'Imported' };
+                    } else {
+                        reject(new Error("Invalid template format.")); 
+                        return;
+                    }
                 }
-            }
-            
-            // 1. Manually Pre-process Data to Fix CORS Taint
-            function preprocessObjects(objects) {
-                objects.forEach(obj => {
-                    // Target any image object with an external URL
-                    if (obj.type === 'image' && obj.src && obj.src.startsWith('http')) {
-                        // *** THIS IS THE CRITICAL LINE to prevent the SecurityError on Export ***
-                        obj.crossOrigin = 'anonymous'; 
-                    }
-                    // Check groups recursively (like your button group)
-                    if (obj.objects) {
-                        preprocessObjects(obj.objects);
-                    }
-                });
-            }
-
-            // Apply the fix to the main objects array
-            if (template.data && template.data.objects) {
-                preprocessObjects(template.data.objects);
-            }
-            
-            // 2. Handle Resizing (Kept from your original logic)
-            if (template.dimensions) {
-                const dims = template.dimensions.split('x');
-                const newWidth = parseInt(dims[0], 10);
-                const newHeight = parseInt(dims[1], 10);
                 
-                if (newWidth && newHeight) {
-                    CANVAS_WIDTH = newWidth;
-                    CANVAS_HEIGHT = newHeight;
-                    
-                    // Re-calculate container size based on new dimensions (your existing visual logic)
-                    const canvasContainer = document.getElementById('canvas-container');
-                    if (canvasContainer) {
-                        const maxWidth = 500; 
-                        const maxHeight = 600;
-                        const aspectRatio = newWidth / newHeight;
-                        let displayWidth = maxWidth;
-                        let displayHeight = displayWidth / aspectRatio;
-                        if (displayHeight > maxHeight) {
-                            displayHeight = maxHeight;
-                            displayWidth = displayHeight * aspectRatio;
+                // 1. Manually Pre-process Data (Added crossOrigin fix)
+                function preprocessObjects(objects) {
+                    objects.forEach(obj => {
+                        if (obj.type === 'image' && obj.src && obj.src.startsWith('http')) {
+                            obj.crossOrigin = 'anonymous'; // CRITICAL for non-tainted export
                         }
-                        canvasContainer.style.width = displayWidth + 'px';
-                        canvasContainer.style.height = displayHeight + 'px';
-                    }
-                    
-                    canvas.setWidth(newWidth);
-                    canvas.setHeight(newHeight);
+                        if (obj.objects) {
+                            preprocessObjects(obj.objects);
+                        }
+                    });
                 }
-            }
-            
-            // 3. Clear Canvas and Set Background Color
-            canvas.clear(); 
-            if (template.data.backgroundColor) {
-                canvas.backgroundColor = template.data.backgroundColor;
-                bgColorPicker.value = template.data.backgroundColor;
-            }
-            
-            // 4. Load Objects using the stable loadFromJSON
-            canvas.loadFromJSON(template.data, function() {
+    
+                if (template.data && template.data.objects) {
+                    preprocessObjects(template.data.objects);
+                }
                 
-                // Re-establish custom button properties after loading from JSON
-                canvas.getObjects().forEach(obj => {
-                    if (obj.type === 'group' && obj.objects.length === 2 && obj.item(0).type === 'rect' && obj.item(1).type === 'i-text') {
-                        // This logic is a guess based on your createButton function
-                        obj.isButton = true;
-                        obj.rect = obj.item(0); 
-                        obj.text = obj.item(1); 
-                        obj.text.isButtonText = true; // Re-establish text flag
+                // 2. Handle Resizing (Your existing logic)
+                if (template.dimensions) {
+                    const dims = template.dimensions.split('x');
+                    const newWidth = parseInt(dims[0], 10);
+                    const newHeight = parseInt(dims[1], 10);
+                    
+                    if (newWidth && newHeight) {
+                        CANVAS_WIDTH = newWidth;
+                        CANVAS_HEIGHT = newHeight;
+                        
+                        const canvasContainer = document.getElementById('canvas-container');
+                        if (canvasContainer) {
+                            const maxWidth = 500;
+                            const maxHeight = 600;
+                            const aspectRatio = newWidth / newHeight;
+                            let displayWidth = maxWidth;
+                            let displayHeight = displayWidth / aspectRatio;
+                            if (displayHeight > maxHeight) {
+                                displayHeight = maxHeight;
+                                displayWidth = displayHeight * aspectRatio;
+                            }
+                            canvasContainer.style.width = displayWidth + 'px';
+                            canvasContainer.style.height = displayHeight + 'px';
+                        }
+                        
+                        canvas.setWidth(newWidth);
+                        canvas.setHeight(newHeight);
                     }
-                });
+                }
+                
+               // 4. Load Objects using the stable loadFromJSON (asynchronous)
+                canvas.loadFromJSON(template.data, function() {
+                    
+                    // Re-establish custom button properties after loading from JSON
+                    canvas.getObjects().forEach(obj => {
+                        // Check if it's a group and if it has at least 2 items (rect and i-text)
+                        if (obj.type === 'group' && obj.item(0) && obj.item(1)) {
+                            
+                            const item0 = obj.item(0);
+                            const item1 = obj.item(1);
 
-                // Finalize rendering
-                canvas.calcOffset(); 
-                canvas.renderAll();
-                canvas.discardActiveObject();
+                            if (item0.type === 'rect' && item1.type === 'i-text') {
+                                // Re-establish required runtime properties for controls to work
+                                obj.isButton = true;
+                                obj.rect = item0; 
+                                obj.text = item1; 
+                                obj.text.isButtonText = true; 
+                                // Also ensure the children have their event listeners reactivated
+                                item1.on('changed', obj._onObjectChange);
+                                obj.on('scaling', obj._onObjectChange);
+                            }
+                        }
+                    });
+
+                    // Finalize rendering
+                    canvas.calcOffset(); 
+                    canvas.renderAll();
+                    canvas.discardActiveObject();
+                    
+                    resolve(); // <-- CRITICAL: RESOLVE the Promise here
+                });
             });
         }
 
@@ -978,9 +981,7 @@ function populateVariantsSidebar(groupId, variants) {
                     const params = new URLSearchParams(window.location.search);
                     const tid = params.get('templateId');
                     
-                    // 1. CRITICAL FIX: Register custom properties here, where the DOM and canvas 
-                    // are initialized, but before any template loading begins.
-                   // fabric.Object.ownProperties.push('name', 'isButton', 'isButtonText', 'isButtonRect'); 
+                    // Note: No fabric.Object.ownProperties.push line here, as it broke things.
 
                     if (!tid) {
                         addInitialElements(); 
@@ -1020,10 +1021,10 @@ function populateVariantsSidebar(groupId, variants) {
                         CANVAS_WIDTH = newWidth;
                         CANVAS_HEIGHT = newHeight;
                         
-                        // Load the template (synchronous due to Promise)
+                        // Load the template (The AWAIT waits for the promise resolve in loadFromJSON)
                         loadTemplate(templateVariant).then(() => {
                             // After loading, populate the right sidebar
-                            populateVariantsSidebar(loadedTemplateGroupId, currentTemplateVariants);
+                            populateVariantsSidebar(loadedTemplateGroupId, currentTemplateVariants); // <-- This should now run successfully
                             updateZoom(64);
                         }).catch(err => {
                              console.error('Error loading template:', err);
@@ -1035,6 +1036,7 @@ function populateVariantsSidebar(groupId, variants) {
 
                     } else {
                         console.warn('Could not find template data for ID:', tid);
+                        // If template not found, do not load default, just update zoom
                         updateZoom(64);
                     }
                 } catch (err) {
