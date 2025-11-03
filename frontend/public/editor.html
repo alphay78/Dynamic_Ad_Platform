@@ -823,12 +823,11 @@
                     canvas.renderAll();
                     canvas.discardActiveObject();
                     
-                    resolve(); // <-- CRITICAL: RESOLVE the Promise here
+                    resolve(); 
                 });
             });
         }
 
-            // --- NEW Layer Control Functions ---
             function moveLayer(direction) {
                 const obj = canvas.getActiveObject();
                 if (!obj) return;
@@ -935,8 +934,6 @@ function populateVariantsSidebar(groupId, variants) {
         }
     }
 }
-
-            // --- 2. START OF CORRECTED FINAL BLOCK ---
             
             // Populate Font Dropdown
             FONT_OPTIONS.forEach(font => {
@@ -990,7 +987,6 @@ function populateVariantsSidebar(groupId, variants) {
             zoomOutBtn.addEventListener('click', zoomOut);
             zoomResetBtn.addEventListener('click', resetZoom);
 
-            // --- NEW Lock Control Listeners ---
             lockSelectedBtn.addEventListener('click', () => {
                 const obj = canvas.getActiveObject();
                 if (obj) {
@@ -1015,13 +1011,10 @@ function populateVariantsSidebar(groupId, variants) {
                 console.log('All objects unlocked');
             });
 
-           // --- NEW: Load Initial State (MODIFIED) ---
             (function autoLoadFromQuery() {
                 try {
                     const params = new URLSearchParams(window.location.search);
                     const tid = params.get('templateId');
-                    
-                    // Note: No fabric.Object.ownProperties.push line here, as it broke things.
 
                     if (!tid) {
                         addInitialElements(); 
@@ -1098,7 +1091,6 @@ function populateVariantsSidebar(groupId, variants) {
                     updateZoom(64);
                 }
             })();
-            // --- END OF CORRECTED FINAL BLOCK ---
 
         });
     </script>
